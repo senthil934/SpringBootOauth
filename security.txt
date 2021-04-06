@@ -1,0 +1,890 @@
+Authorization & Authentication
+    - The person who accessing the website is right user and access right details. If customer, they have some access detail, if admin means they have some access details.
+   - For eg, in Banking sites as a customer role we have only certain privileges like we can access the history, do some transaction, adding beneficiary etc. But he cant see others loan details, insurance details, changing of background color etc. So based on security only we can do this job
+   - Spring Security basically do 2 important jobs Authentication and Authorization
+   - Authentication basically collect the username and password of the user and if the credentials matches and fetch the role and based on the role we can decide what access privilege that particular user have in the application.
+    - Authorization means which page the user is going to access based on the role
+    - To get the authentication details, 3 ways
+           1. In-memory authentication - while writing the prg itself we statically specify the username, password and role
+           2. Database authentication - we are going to fetch all credentials from database
+           3. LDAP
+    - In realtime, whenever the request comes it should go to login page, there they enter username and password with help of that we fetch the roles and after that they decide whether we have to go to specific page.
+   - In Spring Security apart from checking the username and password we also have JWT(JSON Web Token) and OAUTH(Open Authentication).
+   - For ex, If we go to Quora, immediately they wont show the details, instead they ask us to login as google account or login as facebook account or create a account in quora site and then login. So we can use any account to check ur credentials and then we can login. This is called OAUTH
+    - Whenever a user logs in, it generate one token which is combination of username,password, role etc it creates one token. So whenever the user enter into the page will get that token. The token has some time period for eg 10hrs we can use this token, after 10 hrs we can refresh the token and extend to another 10hrs or if time exceeds than 10hrs it shows u cannot access because token validation is over.
+   So whenever we login, instead of giving username and password, they will give some token and for that token they set some time period. Once the time period is completed it says access denied. This is called JWT which contains token as key  value pair
+   - So based on the requirements of the appl we can use any one of the security.
+   - Spring Security concept can be used in both Spring MVC and Spring Boot also. But the difference is in Spring MVC we have to add lot of plugins and write more code. But in SpringBoot we havto add just 1 plugin with less code. If we are using Spring Boot 2 version and if u r having password in ur appl, then Spring Boot ask what type of encoding/encryption technique 
+   - By default, Spring Boot give BCrypt password encoder or without password encoder
+   - Bcrypt password encoder will generate different password for same string in different situation of length 60 so hacker cant able to hack it easily but in SHA, MD5 each time the length will differ
+   - bcrypt is a password hashing function designed by Niels Provos and David Mazières, based on the Blowfish cipher. Bcrypt uses adaptive hash algorithm to store password.BCrypt internally generates a random salt while encoding passwords and hence it is obvious to get different encoded results for the same string.But one common thing is that everytime it generates a String of length 60.
+
+
+1. If we extends WebSecurityConfigurerAdapter which contains 2 methods
+configure(authorization) and configureGlobal(authentication)
+configure(authorization) and configure(authentication)
+
+AuthenticationManagerBuilder is responsible for authentication details
+
+2. UserDetailsService interface 
+        - If u want to validate username and password (ie) it take details from database and check whether credential is correct or not for that we use UserDetailsService and returntype is UserDetails which contains username, password and only roles in the form of list
+        - To validate this we call auth.userDetailsService() and take an argument where we passed the object of another separate class that implements an interface UserDetailsService. This interface is used to fetch username and password from database
+        - Whenever we implement UserDetailsService, by default we override a method called loadUserByUsername() which has one abstract method so it is functional interface
+        - This method takes username we passed and if username is present it shows the relevant details and if user is not found throws UsernameNotFoundException
+
+3. GrantedAuthority interface - Represents an authority granted to an Authentication object.
+   SimpleGrantedAuthority class - Basic concrete implementation of a GrantedAuthority.
+
+4. Now whatever the username, password and role are stored inside inbuild class called User - Models core user information retrieved by a UserDetailsService.
+public class User
+extends java.lang.Object
+implements UserDetails, CredentialsContainer
+
+
+5. Since we are using Spring security concept, it wont allow to access the request directly instead it will show the login page where it will ask for username and password present in database. Using UserDetailsService it will check whether username and password is valid or not. If it is valid it will allow to access the respective page, if it is invalid it will stay in same page
+
+
+Steps
+1. Create tables
+2. Declare Dependency like spring-boot-starter-security
+3. Create User and Role class
+4. Code UserRepository
+
+
+
+
+JSON WEB TOKEN
+   - Best secure way to communicate between client and server
+   - It completely follows stateless authorization mechanism (ie) all user state dosent store in server memory or cookies
+   - When client want to access any rest API from server side appl, we need to provide hardcode username and password. When client want to access any API from server side appl always we need to pass hardcode username and password which is not good
+   - We dont want to give username and password for each and every request, to overcome this issues we use JWT
+   - As we enabled spring security in server side application, when first time client sends the request we need to pass hardcode username and password as part of request. Now request comes to server side appl, now the server returns one encrypted string called JSON token which consist username and password in encrypted format. Now client want to access another api, there is no need to pass username and password for each and every request. Instead of passing username and password for each and every request, you can use jwt token.
+    - JWT contains 3 parts separated by ".", 
+          - header which specify the type of algorithm we use HS256 and type of token we use like JWT 
+          - payload - need to set the userdetails which is called as claims
+          - signature - header and payload convert as base64 url encoder and give the signature 
+
+Steps
+1. Create spring boot project with spring web, spring security, spring data jpa and mysql dependency
+2. Create entity and repository to store user details
+3. We initailize some default username and password in main class, so after main class invokes it stores all username and password in database using @PostConstruct
+4. configure all db information in application.properties
+5. Configure security information in WebSecurityConfig
+6. Create CustomUserDetailsService which implements UserDetailsService
+7. Run the appl, with http://localhost:8080 which starts default login page and u can use any  username and password to validate it
+
+8. But we want to implement JWT (ie) if user sends the request with username and password, we want to generate web token, so that user can directly pass that web token as part of request header for authorization (ie) user no need to pass username and password for each and every request
+9. For that we need to add one JWT library and create utility class in which we write logic to create and validate token
+<dependency>
+   <groupId>io.jsonwebtoken</groupId>
+   <artifactId>jjwt</artifactId>
+   <version>0.9.1</version>
+</dependency>
+
+10. Create JwtUtil class, which contain generateToken() which generate token by taking username as argument. When user send request first time with username and password as part of request header and we fetch the username and based on that username we create a token by calling createToken()
+
+11. Inside createToken(), we use JWT library and set claim which is empty Map and subject is username and set the date when we issued the date and also set expiry limit for that token for next 10hr and also with algorithm used HS256.
+
+12. Inside validateToken(), we provide token and userDetails which is username and password, then extractUsername() which extract username from token. Basically token will generated in the form of encrypted string, we can extract username and password from that string, then we validating username and verifying whether the token in expired or not
+
+13. isTokenExpired(), used to check whether token is created before 10hr it return true otherwise false
+
+14. Create "/authenticate" endpoint which take username and password and generate web token. We take AuthenticationManager to authenticate username, password from AuthRequest, and if it is succeed it will generate JWT token in encrypted format
+
+15. As we implement Spring Security, we need to inform Spring framework, if request is coming with /authenticate then dont apply security for this specific method, because we want to generate jwt token. Since we implement Spring security, it will enable for all endpoint so we want to disable for "/authenticate" url
+   For that in SecurityConfig, we override configure() and disable csrf() and we specify if we get request "/authenticate" to permit and if anyother request comes means to authenticate
+
+16. Run the application, go to postman in POST request we access http://localhost:8080/authenticate 
+   In Body - Raw - Type (application/json)
+{
+   "userName":"hello",
+   "password":"abcd"
+}
+click Send
+  Now it will generate one encrypted string
+ - Copy the string and paste in jwt.io site and check 3 parts of the token 
+
+17. Now we access other endpoint "/" using token. 
+Goto Postman in GET request we access http://localhost:8080/
+In header - contenttype: application/json
+            Authorization: Bearer "paste the token"
+Click Send
+  - Now the endpoint will not work, because Spring boot didnt understand the type of authorization
+
+
+18. We need to tell to SpringBoot extract the string, get username and password then authenticate user, if user authentication is succeed then allow user to access endpoint.
+    So before request goes to controller endpoint we want to validate the token, for that we write one filter called JwtFilter which extends OncePerRequestFilter which executes for every request once, here we write logic to validate and authenticate the user.
+    In this filter, we need to extract authorization header from ServletRequest
+
+19. Run the appl
+Post Request - http://localhost:8080/authenticate - generate the token by providing username, password in body
+Get Request - http://localhost:8080/ 
+In header - contenttype: application/json
+            Authorization: Bearer "paste the token"
+Click Send
+   - We can see the response
+
+
+
+     
+
+Spring Oath2
+    - Let say we are building ur website where u want to provide security, where ur user want to login ofcourse we can have own database or own way of verifying the user. 
+   - But we have one issue, if u have user details in ur database or ur server, u have to protect it. Ofcourse it becomes difficult to manage the database ip, if someone hacks it u r responsible.
+   - Second issue even if we have database or own server most of the user using some type of social networking login, for example ur consumer has google account or facebook account. So can we have google login in ur website, so we dont want to manage the data, it will manage by Google.
+   - For that we have a feature called OAuth2
+OAuth 2 is an authorization framework that enables applications to obtain limited access to user accounts on an HTTP service, such as Facebook, GitHub, and DigitalOcean. It works by delegating user authentication to the service that hosts the user account, and authorizing third-party applications to access the user account. OAuth 2 provides authorization flows for web and desktop applications, and mobile devices.
+
+
+Steps: SpringBootOauth2-Github
+
+1. Configure pom.xml
+2. Configure the controller and mapping 
+3. Now we will access the appl using github account for that we need to create client id and client secret, so from appl based on that client id we can communicate through Github server
+    - Goto Github.com - login - Settings- Developer Settings - Oauth Apps - Register new application
+    Application name: SpringBootOauth2-Github (project name)
+    Homepage url : http://localhost:8080/
+    Authorization callback url: http://localhost:8080/
+    - Click Register Application
+Now it will create client Id and client secret and paste in application.yml
+    - Upload new logo
+    - Click Update Application
+
+4. Run the application and access http://localhost:8080/
+    - Now from the appl it will access the request from Github for authentication purpose
+
+
+Steps: SpringBootOauth2-Google project 
+Now we will use google login to access the website and access the token. Once u login through google, it will send one token for the website based on that token ur website will access.
+
+1. Goto https://console.developers.google.com/ login with google credentials
+2. Click MyFirstProject - Click New Project
+   Project Name: SpringBootOauth2-Google
+   Create 
+3. Now we need to enable Google API
+   Click Enable API and Services - Search for Google+ API
+   Click Enable 
+4. Click on API & Services - Click Credentials - Click Create Credentials - Select Oauth Client ID
+   Click Configure Consent Screen - Click External - Click Create
+         App Name: SpringBootOauth2-Google
+         User support email: senthil1418@gmail.com
+         Developer Email: senthil1418@gmail.com
+      - Click Save And Continue - 3 times
+ - Goto Credentials - Create Credentials - Select Create Oauth client Id
+      - Select Application Type: Web Application
+           Name: SpringBootOauth2-Google
+      - Under Authorized redirect URIs - Click Add URI
+           URIs: http://localhost:8080/login
+      - Click Create
+Once we click create, it will create client ID and client secret key 
+
+5. Create spring boot project with Spring web, Spring Security, Oauth2 client
+6. Create HomeController
+7. Create SecurityConfig, in that we say any user can access "/" but if "/prevent" request comes it has to be authenticated using Google.
+8. In application.properties we configure the client id and client secret to access the appl using google account
+9. Now start the application
+http://localhost:8080 - print any user can access this
+http://localhost:8080/prevent - it will automatically goes to google account
+   - But now it should shows authorization error, so copy url http://localhost:8080/login/oauth2/code/google 
+   - Goto Credentials - Go to the project - paste url in Authorized Redirect URI - click Save
+10. Now run once again http://localhost:8080/prevent
+   - Now provide gmail username and password, which displays the entire user info
+ 
+
+
+JWT Authentication Token
+     - Consider we have SpringBoot server where we will write some endpoints and we have postman to test the api's on the server. 
+     - Consider we have /welcome api and we want to keep it secure, which means no one can access directly, if the user logins and have token then only he can access the rest api's.
+     - So in order to access the endpoints first the client has to generate token along with username and password. Now the server will authenicate the username and password and if it is correct the server sends the response otherwise sends error
+     - So whenever client want to access any api along with any request url we have to pass token as authorization header. Now SpringBoot will validate the token then give permission to access the api's
+     - Format of the header would be key value pair where key is Authorization : and value is Bearer "tokenname" 
+
+Steps : Refer SpringBootJWT
+
+1. Create SpringBoot project with Spring web, Spring Security, Jsonweb token and javax.xml.bind dependency
+
+2. Create HomeController to create "/welcome" api. Now we dont want to access this api publicially which means if the user logins and get the token then we need to authenticate this api
+
+@RestController
+public class HomeController {	
+	@RequestMapping("/welcome")
+	public String welcome() {
+		String text="This is a private page. ";
+		text += "This page is not allowed to unauthenticate users";
+		return text;
+	}	
+}
+ 
+If we want to check whether "/welcome" is working and since we implement Spring security by default it opens login page by giving "http://localhost:8080/welcome"  and u provide 
+    username: user
+    password: copy the generated password in server console 
+and check whether it works. Similarly if we want to logout we can provide http://localhost:8080/logout.
+   Here we didnt use anything about JWT, it is form based spring security 
+
+3. We need to configure the security features, so we create MySecurityConfig which extends WebSecurityConfigurerAdapter and override the configure() for HttpSecurity and AuthenticationBuilder, so that we can change default configuration of Spring security features.
+   Now we use UserDetailsService authentication (ie) we provide user details so we create CustomUserDetailsService which calls loadByUserName() and authenticate the user information and autowired the class.
+  We also configure the password encoder. 
+
+@Configuration
+@EnableWebSecurity
+public class MySecurityConfig extends WebSecurityConfigurerAdapter{
+	
+	@Autowired
+	private CustomUserDetailsService customUserDetailsService;
+
+        @Bean
+	public PasswordEncoder passwordEncoder() {
+		return NoOpPasswordEncoder.getInstance();
+	}
+
+        @Bean
+	public AuthenticationManager authenticationManagerBean() throws Exception {
+		return super.authenticationManagerBean();
+	}
+
+
+	@Override
+	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+		auth.userDetailsService(customUserDetailsService);
+	}
+
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		
+	}
+
+}
+
+
+4. Create CustomUserDetailsService class which implements UserDetailsService and override loadUserByUsername() which returns UserDetails (ie) it will return user information.
+   So whenever we call auth.userDetailsService(customUserDetailsService), it will call internally loadUserByUsername() to get user details.
+   Inside loadUserByUsername(), we are going to check fake username and password are equal and returns User class (we dont have User class so we are using Spring User class which has username, password and Role authority). If username dosent match then it throws UsernameNotFoundException
+  
+public class CustomUserDetailsService implements UserDetailsService {
+
+	@Override
+	public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
+		if(userName.equals("senthil")) {
+			return new User("senthil","abcd123",new ArrayList<>());
+		}
+		else {
+			throw new UsernameNotFoundException("User name is not found!!!");
+		}
+	}
+
+}
+
+5. Now we configure the authorization in configure(HttpSecurity http) method first we disable csrf and cors, then we authorize "/token" request to generate the token for all users. Then for any request we need to authenticate and finally creating the session
+        @Override
+	protected void configure(HttpSecurity http) throws Exception {
+		http
+		    .csrf().disable()
+		    .cors().disable()
+		    .authorizeRequests()
+		    .antMatchers("/token").permitAll()
+		    .anyRequest().authenticated()
+		    .and()
+		    .sessionManagement().sessionCreationPolicy                      (SessionCreationPolicy.STATELESS);
+	 }
+
+6. Now whenever we give request for first time, it has to generate the token for that we need to add jwt token and javax.xml.bind dependency.
+   In order to generate the token we need to create JwtUtil class which contains methods for generating token, validating token, check whether token is expired.
+   We can take code from the internet, in google we can give jwt util class code and get from github
+https://github.com/koushikkothagal/spring-security-jwt/blob/master/src/main/java/io/javabrains/springsecurityjwt/util/JwtUtil.java
+
+Which contains generateToken() which internally call createToken() to create token and validateToken() to validate the token
+  We can declare this class as @Component so that we can autowire JwtUtil class and use its methods
+
+7. Create JwtController class to generate the token, for that we create "/token" endpoint with POST request. Here generateToken() accept the user information for that we create JwtRequest model class which contains username and password
+
+8. Create JwtRequest class
+
+9. Now we get entire JwtRequest class into generateToken(), so we pass JwtRequest inside the method.
+   We need to autowire other services also like AuthenticationManager, JwtUtil and CustomUserDetailsService
+
+10. Now inside generateToken() we got username and password, now we want to authenticate for that we use authenticationManager authenticate(),inside that we need to pass username and password for that we use UsernamePasswordAuthenticationToken along with username and password from JwtRequest
+
+@RequestMapping(value="/token",method=RequestMethod.POST)
+	public ResponseEntity<?> generateToken(@RequestBody JwtRequest jwtRequest) throws Exception{
+		System.out.println(jwtRequest);
+		try {
+			this.authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(jwtRequest.getUsername(), jwtRequest.getPassword()));
+		}
+		catch(UsernameNotFoundException e) {
+			e.printStackTrace();
+			throw new Exception("Bad Credentials!!!");
+		}
+	}
+
+11. In case if username and password is correct, we need to generate token for that we need UserDetails, so we get those details from CustomUserDetailsService class
+
+UserDetails userDetails = this.customUserDetailsService.loadUserByUsername(jwtRequest.getUsername());
+
+12. Now from the userDetails we need to generate token for that we need to call JwtUtil generateToken()
+ 
+String token = this.jwtUtil.generateToken(userDetails);
+System.out.println("JWT "+token);
+
+13. Now we want to send the token out, for that we need to convert token as JSON object. So we need to create JwtResponse class with String token property. Now return that response with token in generateToken()
+
+return ResponseEntity.ok(new JwtResponse(token));
+
+14. Start the application and in Postman we generate the token using http://localhost:8080/token with POST request and in Body - Raw - JSON and give
+{
+   "username" : "senthil",
+   "password" : "abcd123"
+}
+Click Send 
+Now it will generate the token for that username and password
+
+In case if we pass wrong username and password, then it will thow an exception as Bad Credential
+
+15. Now the client is sending the request to "/welcome" along with generated token and now on the server side we have to check whether the token in correct or not, for that we have to create a filter 
+
+16. Create JwtAuthenticationFilter class which extends OncePerRequestFilter and override doFilterInternal()
+   Inside this method we need to get Jwt header and check whether it starts with "Bearer" and then validate the token.
+
+17. Now we want to configure JwtAuthenticationFilter inside MySecurityConfig using 
+http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+which means before the request goes, the filter will check for the token and then validate it 
+
+18.  Start the application and in Postman we generate the token using http://localhost:8080/token with POST request and in Body - Raw - JSON and give
+{
+   "username" : "senthil",
+   "password" : "abcd123"
+}
+Click Send 
+Now it will generate the token for that username and password
+
+After that we issue http://localhost:8080/welcome with GET request and in Headers
+key: Authorization
+value: Bearer "token"
+
+Click Send
+
+Now it will display the output from "/welcome" endpoint securely
+
+19. In case if we want to secure any other endpoints we have to generate token then only we can access the endpoint
+Now if we want to access the "/getUsers", first we have to generate the token and the we can access the endpoint
+
+20. Previously we have two endpoints "/welcome" and "/getUsers". If the user login and generate the token then only he can access those endpoints.
+    But consider we dont have token and if we try to access the endpoints then it will shows 403-Forbidden error. But we need to get unauthorized information that they dont have token 
+    We need to create a JwtAuthenticationEntryPoint class which implements AuthenticationEntryPoint interface and override commence() which reject all unauthenticated request and send error code 401.
+ 
+   Next we configure inside MySecurityConfig configure(HttpSecurity) using
+
+.and().exceptionHandling().authenticationEntryPoint(entryPoint);
+
+21. Start the application, now if we access http://localhost:8080/welcome in GET request without token, it will show 401-Unauthorized request
+
+
+SSL Concepts
+   - Secured Socket Layer is the standard security technology for establishing encrypted link between a webserver and a browser.
+   - For example, whenever we are going for any banking transaction we are using our browser to make connection to the banking server, so we enter our userid, password  and card details which are very sensitive details. If those data in the network is somebody hacks it and they misuse it. 
+   - For this one SSL is very handy, it dosent allow the data that we are putting in the browser and it dosent allow that to be clear while passing through network fron the browser to the web server, it may be encrypted. So it establish an encrypted link between a web server and a browser. This link ensures that all data passed between the web server and browsers remain private and integral.
+   - SSL is an industry standard and is used by millions of websites in the protection of their online transactions with their customers.We have a banking website, we need to ensure that our customers data to be secured.
+
+2 ways of SSL
+1. 1 way SSL
+     - Whenever from the client request is given to the server, so how does the encrypted link is created.
+   In 1 way SSL, immediately the server will send a public certificate and if this public certificate is available in the client truststore that means it is trusted server from where we are getting the response. Once client certificate is trusted then only we can see the response from the server.
+   So whenever we send the data to the server, so that will be encrypted by this certificate and then data will flow from client to server.
+   The data that client entering in browser that should not passed in clear throughout the network. So encrypted link has to established and first phase the certificate will verified whether that is available in client. Once it is trusted then the data will be encrypted with this certificate and then sent to the server.
+  - Every browser or OS has a package of bundeled certificates, root and common intermediate certificates of trusted certificate authorities.
+    - In Google chrome - Security - Manage Certificates  - Select Intermediate Certification Authorities 
+    We can see so many trusted certificates in our OS. So whenever we give google.com, it creates secure connection that means the google server have sent public certificate to our system or browser where we get request  which has certificate to access my system.
+
+2. 2 way SSL
+      - The server public certificate has to be in the client truststore and client certificate has to be in the server truststore. The server will send first then client after verifying will send its public certificate to the server back and vice versa.
+
+Example:Refer SpringBoot-SSL project - 1 WAY SSL
+
+1. Create SpringBoot-SSL project with Web dependency
+
+2. Create an endpoint and check how it works without SSL 
+
+@RestController
+public class DemoController {
+	
+	@RequestMapping("/getData")
+	public String demo() {
+		return "Hello SSL";
+	}
+
+}
+
+3. Now we start the application and invoke the endpoint "/getData"
+http://localhost:8080/getData
+
+4. In order to make SSL, we need to put some configuration in application.properties
+server.ssl.key-alias=demo
+server.ssl.key-password=changeit
+server.ssl.key-store=classpath:ssl-server.jks
+server.ssl.key-store-provider=SUN
+server.ssl.key-store-type=JKS
+
+We create keystore file called ssl-server.jks and its password is "abcd1234" which is jks file provided by Sun.
+A JKS file is an encrypted security file used to store a set of cryptographic keys or certificates in the binary Java KeyStore (JKS) format. It requires a password to be opened.
+
+5. We create selfsigned certificate using keystore explorer or keytool commands provided by JDK. We use keytool provided by JDK
+
+we create alias as "demo" since we configured in application.properties file as
+server.ssl.key-alias=demo and password for keystore will be always "changeit"
+
+C:\Spring\SpringBoot-SSL>keytool -genkey -alias demo -keyalg RSA -keystore "ssl-server.jks"
+Enter keystore password:
+Re-enter new password:
+What is your first and last name?
+  [Unknown]:  senthil
+What is the name of your organizational unit?
+  [Unknown]:  hcl
+What is the name of your organization?
+  [Unknown]:  hcl
+What is the name of your City or Locality?
+  [Unknown]:  chennai
+What is the name of your State or Province?
+  [Unknown]:  Tamilnadu
+What is the two-letter country code for this unit?
+  [Unknown]:  IN
+Is CN=senthil, OU=hcl, O=hcl, L=chennai, ST=Tamilnadu, C=IN correct?
+  [no]:  yes
+
+Enter key password for <demo>
+        (RETURN if same as keystore password):
+Re-enter new password:
+
+Warning:
+The JKS keystore uses a proprietary format. It is recommended to migrate to PKCS12 which is an industry standard format using "keytool -importkeystore -srckeystore ssl-server.jks -destkeystore ssl-server.jks -deststoretype pkcs12". 
+
+
+6. Now start the application and hit endpoint "localhost:8080/getData" 
+
+Now Tomcat runs on 8080 with https so we get "Bad Request.This combination of host and port requiers TSL" that means secure communication is happened. Now ur connection is not private (ie) the certificate we have used is not trusted so we need to give trust because this certificate is selfsigned we didnt purchase like cyclechain which is authorized by any certified authority
+
+Now give https://localhost:8080/getData
+    click Advanced - Proceed to localhost
+Now the output will be coming as "Hello SSL"
+
+
+Example: 2 way SSL 
+      In case of 1 way SSL, in server and client one certificate is exchanged and the client truststore should be available, that request which is coming from server, the client should trust that certificate then only handshake will happen and the certify data will transfer from server to client.
+    In case of 2way SSL, both client and server need to trust both certificate then only handshake will happen and then data will transfer from server to client.
+    First client need to trust the server and also server has to validate the client certificate, once the server gives the certificate to client and again the client send back the required certificate to the server then only the trust will happen and then handshake will happen between server and client and then data will be transferred.
+
+Traditionally, most of us are familiar with 1 way SSL. In this form, the server presents its certificate to the client and the client adds it to its list of trusted certificate. And so, the client can talk to the server.
+2-way SSL is the same principle but both ways. i.e. both the client and the server has to establish trust between themselves using a trusted certificate. In this way of a digital handshake, the server needs to present a certificate to authenticate itself to client and client has to present its certificate to server. 
+
+https://medium.com/@niral22/2-way-ssl-with-spring-boot-microservices-2c97c974e83
+
+Import a .p12 file	
+Start Chrome.
+From the control menu, which is near the right of the address bar, click Settings > Show advanced settings.
+In the HTTPS/SSL section, click Manage Certificates.
+On the Trusted Root Certification Authorities tab, click Import > Next.
+Click Browse and select the .p12 file for the Report Builder; then, click Open > Next.
+Enter the password that you received with the .p12 file and click Next.
+Select Place all certificates in the following store.
+Click Browse and select Trusted Root Certificate Authorities.
+Click OK > Next > Finish; then click OK to close the other windows in the Certificate Import Wi
+
+
+Spring Boot with SSL - Refer springboot-https project
+
+1. Create project with web dependency
+2. Create a rest end point /hello in HelloResource.java
+@RestController
+@RequestMapping("/hello")
+public class HelloResource {
+
+    @GetMapping
+    public String hello() {
+        return "Hello YouTube";
+    }
+}
+
+3. Configure all properties in application.properties to make spring boot use SSL
+
+server.port=8443
+server.ssl.key-alias=https-example
+server.ssl.key-store-type=JKS
+server.ssl.key-password=password
+server.ssl.key-store=classpath:https-example.jks
+
+In order to provide secure hhtps connection we can use
+  1. SSL(Secured Socket Layer) - If we use https connection over the internet, this is used to secure the data using https and u dont want others to peek into ur information when transfer info from one end to another 
+   2. TLS(Transport Layer Security) - It is advanced version of SSL which adds more feature to SSL 
+
+Truststore and Keystore
+   - Truststore is when u want to store public certificate into the keystore. Eg: google.com which is public for everyone to view
+   - Keystore is used to store private certificate of client or server. Eg: server name which is specific to internal servers
+
+4. We create self signed certificate using keytool called https-example with password called "password"
+
+C:\Spring>keytool -genkey -alias https-example -storetype JKS -keyalg RSA -keysize 2048 -validity 365 -keystore https-example.jks
+
+5. https-example.jks to resources folder
+
+6. Start ur application and run as 
+http://localhost:8443/hello - shows bad request
+https://localhost:8443/hello - shows the output
+
+
+
+What is Oauth2? mainly based on authorization concept
+     Consider we develop an application abc.com and ur application will be consumed by some people, so whatever appl we create, we develop an interface so that enduser can interact with it. For eg facebook which has frontend and we can interact with it.
+    Like that we create abc.com and some person is interacting with our appl. Consider that person is registered in our appl, so he is accessing some resource (ie) backend which has rest api, services and data in appl.
+   But these resources cannot be accessed directly so we have to provide some authentication. So in order to access resource server which contains the resources we have to authorize it for that we have to create an authorization server.
+    So whenever the user gives request to the appplication, and from there if we provide credentials it will go to authorization server. This authorization server can be a third party server like github, facebook, gmail etc or we can implement our own server. 
+    Based on the credentials provided, the authorization server provides a token back to the clien t. Now the appl use this token and send to resource server, and we validate the token in resource server and if it is validated we can access the details from resource server using that token.
+    Authorization server will just share the token, it does not provide any credential information and that token will be validated using oauth2 and then give the response back to client.
+
+
+Step 1: Creation of AuthorizationServer
+
+- Oauth2 is protocol for token based authorization
+- Oauth2 is an authorization framework
+- Oauth Roles: Resource Owner(User), Client(App), Resource Server, Authorization server
+- Oauth work as actor between client, user, authorization server and resource server
+
+1. Create SpringBoot-AuthorizationServer with Spring security, cloud oauth2, spring web dependency
+2. To transfer user details we use inmemory authentication and no password encoder in UserManageConfig class
+@Configuration
+public class UserManageConfig {
+
+	public UserDetailsService userDetailsService() {
+		InMemoryUserDetailsManager user=new InMemoryUserDetailsManager();
+		user.createUser(User.withUsername("senthil").password("abcd1234").authorities("read").build());
+	    return user;
+	}
+        
+        public PasswordEncoder passwordEncoder() {
+		return NoOpPasswordEncoder.getInstance();
+	}
+}
+
+3. Whatever user is created is transferred to authorization server. Now we create authorization server and we connect the user to that auth server 
+   - Create class  AuthorizationServerConfig that extends AuthorizationServerConfigurerAdapter with @EnableAuthorizationServer so it will act as authorization server and override 2 methods
+   - First method public void configure(ClientDetailsServiceConfigurer clients) is used When user pass credentials to appl, the credential goes to auth server, but how auth server knows that token has to be released for that particular appl (ie)abc.com appl. The auth server has to know from which appl the request comes so the token has to sent to that particular appl. Here also we use in memory auth for client details with client name and secret.
+     clients.inMemory().withClient("abc.com").secret("abc123")
+		.scopes("read")
+		.authorizedGrantTypes("password");
+
+   - Consider we login with facebook, so in case we already logged in with facebook in that case it will directly access the resource server, it does not go to auth server. So user will directly access auth server or user will access auth server through abc.com appl, it depends on Grant Types like 
+   authorization_code - here will provide credential from resource owner to auth server directly
+   implicit(deprecated) 
+   client_credentials
+   refresh_token
+   password (deprecated) - here will provide credential from resource owner to client appl
+and based on that auth server will release the token
+
+   - Second method public void configure(AuthorizationServerEndpointsConfigurer endpoints) used to couple the particular user with the related authorization server using AuthenticationManager.
+ @Override
+	public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
+		endpoints.authenticationManager(authenticationManager);
+	}
+
+   - Inject AuthenticationManager in UserManageConfig
+        @Override
+	@Bean
+	public AuthenticationManager authenticationManagerBean() throws Exception {
+		return super.authenticationManagerBean();
+	}
+
+
+Now the user created called "senthil" with client "abc.com". Now credentials pass to abc.com and then to auth server and in auth server user and client details are there
+
+4. Start the application and in the console we can see endpoint called pattern='/oauth/token' which automatically created by oauth
+pattern='/oauth/check_token' used to connect auth server and resource server
+
+5. Go to Postman with POST request provide 
+http://localhost:8080/oauth/token?grant_type=password&username=senthil&password=abcd1234&scope=read 
+and go to Authorization tab - select Basic Auth.
+   In that provide client name and secret key for username and pasword.
+   - click SEND button
+
+Now user gives credentials and through abc.com it sends credentials to auth server and it will generate access_token.
+
+So we create an authorization server and this server not only needs information of user as well as client informtion, so based on that client the auth server will issue u the token.
+
+In case if we want to configure multiple clients then we can configure different clients in Authorization server like 
+
+@Override
+	public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
+		clients.inMemory()
+		.withClient("abc.com").secret("abc123")
+		.scopes("read")
+		.authorizedGrantTypes("password")
+		.and()
+		.withClient("xyz.com").secret("abc12")
+		.scopes("read")
+		.authorizedGrantTypes("password");
+	}
+
+
+6. Previously resource owner or user interact with client appl and from their it interact with authorization server and auth server it releases the token.
+    But resource owner can directly interact with auth server also. If resource owner interact through client it may less secure so resource owner directly interact with auth server and it depends on "grant types" like password. But "password" grant type is deprecated because it is less secured and multiple appl credentials is available in client application.
+    So here instead of giving credentials in client appl we are going to give credentails (ie) authenticate in authorization server and client appl is just accessing the resource server using token based authorization. 
+   Using grant type "authorization_code" we can credentials from resource owner to auth server but how authorization server will release token to particular client appl using redirectUris()
+  .withClient("xyz.com").secret("abc12")
+		.scopes("read")
+		.authorizedGrantTypes("authorization_code")
+		.redirectUris("http://localhost:8083");
+
+7. Since we are giving credentials in auth server directly, so where we are going to provide username and password for that we create default form based authentication in UserManageConfig by override protected void configure(HttpSecurity http) 
+        @Override
+	protected void configure(HttpSecurity http) throws Exception {
+		http.formLogin();
+		http.authorizeRequests().anyRequest().authenticated();
+	}
+
+8. Start the appl and run in browser as
+http://localhost:8080/oauth/authorize?response_type=code&client_id=xyz.com&scope=read
+   - Now it will open login page where u provide credentails we provide in UserManageConfig called "senthil" and "abcd1234". Here response_type=code represent the grant type "authorization_code"
+  - Now it will ask to approve or deny - select approve and click Authorize
+  - Now it will redirect to localhost:8083 with some authroization code and with that we can interact with client
+
+http://localhost:8080/oauth/token - used from owner to client appl
+http://localhost:8080/oauth/authorize - used from owner to auth server
+
+9. Now we can run in postman with that generated code in POST request with 
+http://localhost:8080/oauth/token?grant_type=authorization_code&code="generatedcode"&scope=read
+
+In authorization - select Basic Auth - provide 
+     username: xyz.com
+     Password: abc12
+ - click Send
+Now it will generate access token 
+
+
+What is Grant Type: Password ?
+    1. Consider resource owner accessing abc.com application, you are registered user in that appl and now we want to modify the username in that appl, so once u hit the resource url first we have to provide userid and password.
+    2. Now which resource to be modified, deleted will be kept under resource server. But we cant access resource server directly we have provide some restrictions and user should be authorized. We have kept user details in authorization server, now client appl will send credentials to auth server but how auth server will send the generated token to the related client appl. Along with userid and password we also provide client secret details, so auth server will return with access token. Now we send the token to resource server and we authorize that particular user to access the resource 
+
+
+What is authorization_code grant types?
+     1. It is implicit grant types enhance version
+     2. Now resource owner will communicate with auth server directly using "/oauth/authorize" endpoint and once u hit the endpoint it generates auth_code and sent to the client application
+     3. From postman we are going to provide the end point with generated code (ie) from client appl to auth server which will provide access token back to client appl
+http://localhost:8080/oauth/token?grant_type=authorization_code&code="generatedcode"&scope=read
+     4. Now with the help of access_token we can access the resource server 
+
+Client_Credential with refresh token:
+   1. we have only client, auth server and resource server actors
+   2. If the client request resource server to access any resources, it cant access directly, it requires some token to access the resources. Now the client interact with auth server to provide access_token so that it access some resources from resource server. 
+   3. Now auth server is requesting for client credentials, previously in grant types password and authorization_code we provided user credentials. But here we have to provide client credentials to auth server and based on that it provides access token, with that access token we can access resources from resource server
+
+Steps:
+   1. We configure client credentials inside AuthorizationServerConfig as
+                .withClient("pqr.com").secret("abcd")
+		.scopes("read")
+		.authorizedGrantTypes("client_credentials");
+
+   2. Start the application
+   3. Go to postman with POST request provide 
+http://localhost:8080/oauth/token?grant_type=client_credentials&scope=info 
+and in Authorization tab - Select Basic Auth - provide 
+       username: pqr.com
+       password: abcd
+ -click Send
+     Now it will generate the access token
+
+   4. refresh token grant type can be used only along with combination of another grant types. In our case we are using along with password grant type as follows
+                .withClient("abc.com").secret("abc123")
+		.scopes("read")
+		.authorizedGrantTypes("password","refresh_token")
+
+   5. Start the application
+   6. In Postman with POST request provide the endpoint
+http://localhost:8080/oauth/token?grant_type=password&username=senthil&password=abcd1234&scope=read 
+and go to Authorization tab - select Basic Auth.
+   In that provide client name and secret key for username and pasword.
+   - click SEND button
+       - Now along with access_token, it also generate refresh_token also 
+
+    Normally for any token there will be some expiry time, once time is expired that access_token cannot be reused. If u want to reuse then we want to regenerate the access_token by involving all the actors once again instead we use refresh_token.
+    Once access_token is expired, so by using refresh_token we can regenerate the access_token, so once access_token is regenerated, the refresh_token also will be regenerated.
+    
+
+
+
+How resource server would validate the access token ?
+    1. When client tries to access the resource server endpoints we send access_token to resource server from auth server by providing the credentials from client to auth server, now the access_token from auth server goes to resource server with the help of validated access_token we can access the resources from resource server
+    2. How does resource server understands whatever access_token the client sends is valid access token?
+      There are 3 ways, with that resource server can understand that auth server has send the access token to client and from client, it sends the access token to resource server
+
+First way - using oauth/check_token
+    Refer SpringBoot-ValidateToken project
+    1. Create project with spring web, oauth client, spring security dependency
+    2. Create UserManageConfig class, which contains user detail information
+    3. Create AuthorizationServerConfig class. In UserManageConfig we have implemented BCryptEncoder, so in secret code also we have to implement BCryptencoder also. Instead we can implement a new security feature inside public void configure(AuthorizationServerSecurityConfigurer security) method
+      By default Spring security uses opaque token.
+@Override //client info no need to bcrypt 
+	public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
+		security.passwordEncoder(NoOpPasswordEncoder.getInstance());		
+	}
+    4. Start the application
+    5. In Postman with POST request provide the endpoint
+http://localhost:8080/oauth/token?grant_type=password&username=senthil&password=abcd1234&scope=read 
+and go to Authorization tab - select Basic Auth.
+   In that provide client name and secret key  as "abc.com" and "abc123"
+   - click SEND button
+       - Now along with access_token, it also generate refresh_token also with expiry time as 7999 sec because we set access validity token as 8000 sec
+
+   6. Now we want to validate the access-token sent by the client to the resource server using "/oauth/check_token" endpoint. But by default "/oauth/check_token" is not accessible, so we want to make it accessible by configuring 
+        @Override //client info no need to bcrypt 
+	public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
+		security.passwordEncoder(NoOpPasswordEncoder.getInstance())
+		        .checkTokenAccess("isAuthenticated()");
+	}
+isAuthenticated() means anyone cant access or validate the token from authorization server, so before that we have to inform which client credential like "abc.com" and "abc123"
+   7. Start the application
+   8. In Postman with GET request provide the endpoint as
+http://localhost:8080/oauth/check_token?token="paste access_token"
+   In Authorization tab - select Basic_auth 
+      - provide client username and password as "abc.com" and "abc123"
+      - Click SEND
+Now it will provide all client info, user info for that particular token as
+
+{
+    "active": true,
+    "exp": 1617641165,
+    "user_name": "senthil",
+    "authorities": [
+        "read"
+    ],
+    "client_id": "abc.com",
+    "scope": [
+        "read"
+    ]
+}
+
+   9. In case if u dont want to authenticate particular client, in that case we can provide 
+public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
+		security.passwordEncoder(NoOpPasswordEncoder.getInstance())
+		        .checkTokenAccess("permitAll()");
+	}
+Start the appl, in postman with GET request provide 
+http://localhost:8080/oauth/check_token?token="paste access_token"
+   In Authorization tab - select no auth 
+      - Click SEND
+Now it will provide all client info, user info for that particular token as
+
+Second way - Black boarding approach
+     In real time when access_token generates and send to the client, the access_token will be stored into database. Here auth server and resource server access the same database. So once access_token generates, before sending to the client, it will store the token inside database and then send to the client.
+     Now from the client it send the token to resource server, now resource server will go to database and fetch the access token and check it validate or not.
+
+
+Spring Boot oauth2 Authorization server and Resource server 
+
+https://github.com/talk2amareswaran/Spring-Boot-2.1-OAuth2-Authorization-Server-and-Resource-Server-JWT-and-MySQL
+
+Step 1:
+   - we create userservice database
+   - Create table permission which stores permission details
+   - create role table which stores roles
+   - create user table 
+   - Create assign_permission_to_role table used to assign permission to every role
+   - create assing_user_to_role used to assign user to role
+Here John is an adminstrator with roles create_note,edit_note,delete_not,view_all_note,view_note and Mike is user with view_all_note and view_note roles.
+
+Step 2:
+    - Create SpringBoot-AuthServer project with web,data jpa,mysql, oauth2 client dependency 
+    - In application.yml, we configure database properties 
+
+Step 3:
+    - We create public and private key for auth and resource server using Open SSL
+    - Download openssl from https://code.google.com/archive/p/openssl-for-windows/downloads
+    - Extract OpenSSL and configure in env variables as
+           Path: c:/softwares/openssl/bin
+           OPENSSL_CONF: c:/softwares/openssl/openssl.conf
+    - open openssl command prompt
+    - Both public and private key are used to make resource server should understand that token has been received from the authorized auth server. To make reliable communication between auth server and resource server we have to generate the public and private key and to be mentioned in application.yml file
+    - To create private key we have to use
+              OpenSSL> genrsa -out jwt.pem 2048
+      We have openssl command to generate private key using RSA algorithm, file name is jwt.pem of size 2048
+    - Now we fetch private key using
+              OpenSSL> rsa -in jwt.pem
+    - Now we fetch public key using
+              OpenSSL> rsa -in jwt.pem -pubout
+     public key can be given to resource server, but both keys have to configure only inside auth server
+    - Now we configure both keys in application.yml file
+        accesstoken_validity: we are going to get jwt token from auth server,so validity of access token provided is 1 hr
+        refreshtoken_validity: 30 days, once access token is expired we can send refresh token to auth server until access token is created 
+        public and private key: we are going to wrap into JWT token so that the resource server can understand the token has been coming for authroized auth server
+
+Step 4:
+    1. Define @EnableAuthorizationServer in main appl, so that it will act as authorization server
+    2. Define model class called UserEntity with id, name,emailId,password and list of permission assigned to user based on roles
+    3. Create CustomUser class which extends User class and we have set all user info to User class of Spring security
+    4. Create CustomTokenEnhancer class, by default JWT token contains information about the username and users permission list, if u want to add any other info into JWT token we can use this class.
+       We get prinicpal object which returns CustomUser, in that we add additional info like id, name and username into jwt token
+    5. Create SecurityConfiguration class which provides the security configuration info like password should be encoded using BCrypt encoder, custom user details service
+    6. Create Oauth2Config class,whatever oauth2 configure we provide inside application.yml is configured inside Oauth2Config class
+      - We take all values from yml file like clientid, secret, publickey, private key using @Value 
+      - Autowire passwordencoder and authenticationmanager bean
+      - Next we override configure() for security purpose and client info to configure
+      - Next configure() which accept AuthorizationServerEndpointConfigurer to configure the JWT token and token converter separately
+
+
+Step 5:
+    1. Start the application
+    2. In Postman give POST request with http://localhost:8080/oauth/token
+ - In Authorization tab - select Basic Auth - provide client details in
+       username: senthil1418
+       password: senthil@123
+ - In Body tab - Select x-www-form-urlencoded - Provide
+       grant_type: password
+       username: john@gmail.com
+       password: password
+ - Click SEND
+     Now it will generate the access_token and refresh_token,bearer, expiry and additional info called id,name,username
+ - Now copy the access_token and paste in jwt.io, u can see the authorities and user info. Now give public and private key and u can check whether the signature is verified or not
+   
+Step 6:
+   1. Now we create resource server and we can write access control endpoints in resource server and access those endpoints  by sending the bearer token and fetch those info from resource server
+   2. Create SpringBoot-ResourceServer with web and oauth2 client dependency 
+   3. Define @EnableResourceServer in main app so it will act like resource server
+   4. We configure few properties in application.yml like name,port and public key     5. We have access token which contains additional info of user so we are going to decrypt the access token and save inside model class called AccessTokenMapper
+   6. We create security configuration inside SecurityConfiguration class and we override configure()
+   7. Now we want to decrypt all JWT token details in resource server and store in AccessTokenMapper class using JWTConverter class.We have extractAuthentication() which extracts authentication info and store in AccessTokenMapper
+  8. Create Rest controller in resource server for post,get,put and delete request
+Here who have role CREATE_NOTE they only have permission to access createNote(). Now assume we got access_token from auth server and then we try to access these resources createNote(),editNote() methods etc by using access_token but if access_token contains the permission (ie) roles then only we can access.
+    If we want to fetch AccessTokenMapper custom details we can fetch using SecurityContextHolder      
+  
+Step 7:
+   1. Start the application
+   2. In Postman with POST request we give http://localhost:9090/note
+     In Authorization - Select Bearer token - paste the access_token generated
+     Click SEND
+   3. In Postman with PUT request we give http://localhost:9090/note
+   4. In Postman with DELETE request we give http://localhost:9090/note
+   5. In Postman with GET request we give http://localhost:9090/note
+   6. In Postman with GET request we give http://localhost:9090/noteById
+Now John can execute all endpoints because john has all permission to access      
+
+
+Step 8:
+   Now we are going to give permission for Mike, he has only VIEW_ALL_NOTE, VIEW_NOTE
+    1. In Postman give POST request with http://localhost:8080/oauth/token
+ - In Authorization tab - select Basic Auth - provide client details in
+       username: senthil1418
+       password: senthil@123
+ - In Body tab - Select x-www-form-urlencoded - Provide
+       grant_type: password
+       username: mike@gmail.com
+       password: password
+ - Click SEND
+     Now it will generate the access_token and refresh_token,bearer, expiry and additional info called id,name,username
+
+Step 9:
+   1. In Postman with GET request we give http://localhost:9090/note
+   2. In Postman with GET request we give http://localhost:9090/noteById
+Now Mike can execute only /note and /noteById endpoints because he have only 2 permission, but he tries to access other endpoints he gets access denied     
+
+
+
+
+
+
+

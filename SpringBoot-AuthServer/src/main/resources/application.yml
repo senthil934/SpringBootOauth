@@ -1,0 +1,18 @@
+spring:
+    application:
+        name: authserver
+        
+    datasource:
+        driverClassName: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/USERSERVICE?autoreconnect=true
+        password: root
+        username: root
+        
+config:
+    oauth2:
+        clientid: senthil1418
+        clientSecret: senthil@123
+        accesstoken_validity: 1
+        refreshtoken_validity: 30
+        privateKey:  -----BEGIN RSA PRIVATE KEY-----MIIEpAIBAAKCAQEA9Ps9RRP7+REXxMUC/739EF9rupNgZoRIbB4AJUECuiJmfO1PsBikYq4BuE3MZNwEvbEwZwewoInhq/mZq1ZCRpU0etNLAl72e7QvBMTzexvu6Rhbv1bqFHP81fVTNAWbCa9VYb00OH/aCl53NxiGdAtSt7OgPWE7fPdJWZkuXQdcSN4plyPkkM8tMkxOoaNkeN0g0qSgLyXq5EVCrL7hHO3dSEePjESFtOa9ZnrQavPdXD0PVdE1yUiKgsZfmtZqU08lPRQYucEQYJk/Vt6aaByw8NzlWHwX42i6v/vcRLNFqkh4su9XDHbQ5yvLd+WtibEpxOUfEr/FkQYnM+cEtwIDAQABAoIBAQCBr0InAEZB+idv9a75vRRrB2ha80tz2ZEREuyWzAxqhm1ksqedm93hkyW78AtEVSh5VoQ99lctFPCO/mm3xsj83l1Sq+moTqcCo0bEqpIN2KKnaEqhRpxRyXjNtrmd7128ScHUJLmxMxU0qf9H/kamxZu7PW6VL5SzOaDtumZNvd+Y6tkGKqjtX264DuGVZela4fe9TBNwuFb9gTo5MR335vhQj1tiQbFS2W+GoOGjH5LcDEZ5iRc0Dq2Nv8TmPeVirYlK5cdOfS0vGmByaYvbjo4HgaSMVU4HwWcjF4CXTFp8f6pjKoXW/Al3y23MT0Cz0nvqbb/xEuxztl2BkjgRAoGBAPx44+Lf6yQj0xsIhGPRSPGR+6Xbp6j/AYejaMgXuKStrDfEzP5d+fT5SGtCdgZ8TCeT7TxqxEbzi6u2xuQmSvHkL+FRrPEECU2QMUE8Laa2zIVdkq4USzBmFwo4Ojvl5aSVywmO9X1MZCBpbkMj/5jIf+2TmmOGMZ5QdOYdmfmPAoGBAPhnjdHpytkWDMTbaVIra+E/xfljLjjvwSgruAGjFhPfPaF5LhsxfF6Q/d5v9eGYwSctsstx0u+UP/vBnuamaeYRMf5TLGbk8oH5AFuTY8XafCjYPALJeqtm3JA2xj2ccqmRJlzXggmdOvBGzeygCtnAZN407MP8C7XveTJyl55ZAoGBAOsq2/I26rsmF3yFyXOEvPIvLX0Hhjs3FMC4KGDBH79c+h6UVPHWrX5POPKX3IIcA3+WHZN6S8tfDclrngVj2clI6IRzZKi3PscduZNvL4KroQPU7kzyIDs7zNg7GZszgF13HcGQhQAqSNWb/xXREULJ98dfBp8Pn2Y8wTabehHnAoGACl7IXOsVvNpezhka3INTjaPL8A1j8JyRw8uPcwIL+ehn+kXE1v3J42jKMG8cJL7r0Wbm//dQhw/5W9lJePeZlDFDlQqD4AfO1/49NZWBpNDqPgpI9xTSOjWhH6Qpwoi1gL6+i0Gz/BLEUyOhlS9ZRJ3zmBM9jzEGjCHjPWfrTIECgYAaIXKZ5y3FYbHIFkF0vzhDkt7MB/sHs6upT+mKF14/jiuiqo4KhZy//gOiDX1hahvy3N4KreFmJI9KZhwpsd8LppcNSiSqHENDz6q+eEq0zeLayKw+ekhU8/B1szaNggakDs2kzNyec/82ViudYwq9yYjEi2sZIEKI34ONcjOE4g==-----END RSA PRIVATE KEY-----       
+        publicKey: -----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9Ps9RRP7+REXxMUC/739EF9rupNgZoRIbB4AJUECuiJmfO1PsBikYq4BuE3MZNwEvbEwZwewoInhq/mZq1ZCRpU0etNLAl72e7QvBMTzexvu6Rhbv1bqFHP81fVTNAWbCa9VYb00OH/aCl53NxiGdAtSt7OgPWE7fPdJWZkuXQdcSN4plyPkkM8tMkxOoaNkeN0g0qSgLyXq5EVCrL7hHO3dSEePjESFtOa9ZnrQavPdXD0PVdE1yUiKgsZfmtZqU08lPRQYucEQYJk/Vt6aaByw8NzlWHwX42i6v/vcRLNFqkh4su9XDHbQ5yvLd+WtibEpxOUfEr/FkQYnM+cEtwIDAQAB-----END PUBLIC KEY-----

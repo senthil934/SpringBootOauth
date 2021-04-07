@@ -1,0 +1,70 @@
+Spring boot provides flexible ways of reading and resolving properties file
+     1. Referencing property file values from @Value
+     2. Create POJO with @PropertySource to refer to property files and then inject this class to refer to property values, this allows for type safe configuration
+     3. Move property to external file and see how to access it
+     4. How to read multiple property files and how spring resolve the conflicts when same property name is present in more than one file
+     5. Validation on property files
+
+Steps: Refer SpringBoot-ExternalProperties
+
+1. Using @Value 
+      - Configure some property in application.properties
+      - In main appl implements in CommandLineRunner interface and access the properties using @Value 
+
+2. Now if we have to refer more properties then we have to add multiple @Value annotation, instead we have better way 
+   - We create POJO class called MyProperties class and refer to the property, mark it @Component and @ConfigurationProperties to read external configuration   
+   - Using @PropertySource indicate the source of property file
+   - In properties files we have some key value pairs so we can create static object for myapp and mail
+   - Start the appl
+
+3. Now we can move the properties to external file
+    - Now copy all properties into separate file myProperties.properties
+    - Paste path of file in @PropertySource
+    @PropertySource("file:C:\\Training\\Notes\\myProperties.properties")
+    - Start the appl
+
+4. Now we access multiple property files
+    - Create another property file called b.properties and copy the same info from previous properties file and change few info
+    - If there is common properties then it will take from last property file
+    - Start the appl
+    - Not necessary all property file will have same details, if they dont have it will take from the related properties file
+    - We can validate the properties file infor using @Validated and annotation like @NotEmpty, @Min, @Max, @Pattern etc
+
+
+5. Custom properties in application.properties
+       - Refer SpringBoot-ExternalProperty1
+       - We have 2 property in application.properties which are not Spring boot properties, they are my own property which I want to use in my application
+   my.property1=my property one from application properties
+   my.property2=my property two from application properties
+       - For that we create a class annotated with @Configuration and we will specify what is prefix in property using @ConfigurationProperties and declare the property as member variable inside the class
+       - Now we autowired that class inside my controller
+       - Start the application
+       - Run http://localhost:8080/api/data - Now it will display all properties
+
+6. Custom properties in different properties file
+      - Now we create custom.properties which is not application.properties file with custom.name=sam, with property called name and prefix called custom
+      - Create CustomProperties class, with @PropertySource to define different properties file and @ConfigurationProperties with prefix as "custom"
+      - Autowire ur CustomProperties class and access them in /data endpoints
+      - Start the appl and run http://localhost:8080/api/data
+
+7. Multiple custom properties files
+     - Create separate person.properties file custom.surname=kumar
+     - We can separate class to define this property file or in CustomProperties class itself we can use @PropertySources and config multiple files
+      - Start the appl and run http://localhost:8080/api/data
+
+8. Multiple prefix in one properties file
+      - In case person.properties file have different property with different prefix like custom.product.name=youtube videos
+      - In that case create CustomProductProperties class, with @PropertySource to define different properties file and @ConfigurationProperties with prefix as "custom.product" with getter methods
+      - Autowire ur CustomProductProperties class and access them in /data endpoints
+      - Start the appl and run http://localhost:8080/api/data
+
+9. Consider we have new prefix in property custom.new.prop=audios, you can use this using @Value
+
+
+
+
+
+
+
+
+

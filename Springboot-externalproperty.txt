@@ -1,0 +1,172 @@
+Spring boot provides flexible ways of reading and resolving properties file
+     1. Referencing property file values from @Value
+     2. Create POJO with @PropertySource to refer to property files and then inject this class to refer to property values, this allows for type safe configuration
+     3. Move property to external file and see how to access it
+     4. How to read multiple property files and how spring resolve the conflicts when same property name is present in more than one file
+     5. Validation on property files
+
+Steps: Refer SpringBoot-ExternalProperties
+
+1. Using @Value 
+      - Configure some property in application.properties
+      - In main appl implements in CommandLineRunner interface and access the properties using @Value 
+
+2. Now if we have to refer more properties then we have to add multiple @Value annotation, instead we have better way 
+   - We create POJO class called MyProperties class and refer to the property, mark it @Component and @ConfigurationProperties to read external configuration   
+   - Using @PropertySource indicate the source of property file
+   - In properties files we have some key value pairs so we can create static object for myapp and mail
+   - Start the appl
+
+3. Now we can move the properties to external file
+    - Now copy all properties into separate file myProperties.properties
+    - Paste path of file in @PropertySource
+    @PropertySource("file:C:\\Training\\Notes\\myProperties.properties")
+    - Start the appl
+
+4. Now we access multiple property files
+    - Create another property file called b.properties and copy the same info from previous properties file and change few info
+    - If there is common properties then it will take from last property file
+    - Start the appl
+    - Not necessary all property file will have same details, if they dont have it will take from the related properties file
+    - We can validate the properties file infor using @Validated and annotation like @NotEmpty, @Min, @Max, @Pattern etc
+
+
+5. Custom properties in application.properties
+       - Refer SpringBoot-ExternalProperty1
+       - We have 2 property in application.properties which are not Spring boot properties, they are my own property which I want to use in my application
+   my.property1=my property one from application properties
+   my.property2=my property two from application properties
+       - For that we create a class annotated with @Configuration and we will specify what is prefix in property using @ConfigurationProperties and declare the property as member variable inside the class
+       - Now we autowired that class inside my controller
+       - Start the application
+       - Run http://localhost:8080/api/data - Now it will display all properties
+
+6. Custom properties in different properties file
+      - Now we create custom.properties which is not application.properties file with custom.name=sam, with property called name and prefix called custom
+      - Create CustomProperties class, with @PropertySource to define different properties file and @ConfigurationProperties with prefix as "custom"
+      - Autowire ur CustomProperties class and access them in /data endpoints
+      - Start the appl and run http://localhost:8080/api/data
+
+7. Multiple custom properties files
+     - Create separate person.properties file custom.surname=kumar
+     - We can separate class to define this property file or in CustomProperties class itself we can use @PropertySources and config multiple files
+      - Start the appl and run http://localhost:8080/api/data
+
+8. Multiple prefix in one properties file
+      - In case person.properties file have different property with different prefix like custom.product.name=youtube videos
+      - In that case create CustomProductProperties class, with @PropertySource to define different properties file and @ConfigurationProperties with prefix as "custom.product" with getter methods
+      - Autowire ur CustomProductProperties class and access them in /data endpoints
+      - Start the appl and run http://localhost:8080/api/data
+
+9. Consider we have new prefix in property custom.new.prop=audios, you can use this using @Value
+
+
+Spring Boot Cache
+   - Cache means a temporary storage and helps to improve the application performance
+   - Consider a scenario where we have different zipcode for different city. Suppose we have one application and we are searching city from UI, from that it goes to middleware and from their it goes to API or database where we store all the city. While searching the city we are hitting either API or database
+   - For a city name, zipcode is constant so it will never change, it is fixed one. Now we search a city chennai it hit the API or database based on the implementation. Suppose one time we search it will hit with API or database, second type we search same city it once again hit API or database so here we have more network round trips even the data is fixed
+  - Since the data is not going to change we can implement cache or temporary storage. So whenever we search it will check in that cache and if the value is present in cache in that time it will return from cache itself. So we reduce those network round trips instead of getting from api or db, so that we get more performance. In case if we search salem which is not present in cache, in that case it hits api or db and get that zipcode and stores in cache and from their it return to the application.
+   - We can implement cache by taking HashMap and storing those fast checking values in that hashmap and if it is not their we can get by hitting db or api and storing that result into map and returing back to appl.
+   - Spring supports cache mechanism  
+
+SpringBootCache Project
+1. Create SpringBoot project with web,spring boot cache  dependency
+
+2. Based on city name we fetch zipcode, so we create City class with cityName and zipCode
+
+@Data - take care setter,getter,toString,equals and hashcode methods
+@Builder - instead of creating the objects by constructor, directly with builder design pattern we can create that object quickly
+
+3. Create CacheService class with @Service which makes this class as bean in IOC container, where we implement entire cache thing 
+  Here instead of storing into db, here we storing city  information into map with key as string and value as city.
+  we create getZipCode() as @Cacheable which take some name called "city-zip-cache" which will check whether that cityName is present in cache, cityName will act as key and check in that cache. If it is present in cache it will return from it and it will not return from that hashmap.
+   city-zip-cache name means where one map will be created with that name, if multiple cache are their with different name then one one map will be created. Based on the parameter it will identify the key from the cache.
+  If we have multiple parameter then spring itself will take all parameter and based on that it will identify the key from cache. So first time it will come to getZipCode() and from cityZipCodeMap it will return the  city but second time onwards with that cityname it will be return from the cache.
+
+4. We create CacheController with getCityByName() with "/city" request
+
+ @GetMapping("/city")
+    public City getCityByName(@RequestParam("name") String name) {
+        return cacheService.getZipCode(name);
+
+    }
+
+5. Now we see cache implementation, we have different ways like ehcache, redis cache but now we use jdk based map concept cache for that we just use @EnableCaching in main class
+   Whenever we use jdk map based cache internally one cachemanager object will be created which maintains entire cache information. 
+  So we autowire CacheManager which is created by spring into service class.
+
+6. Now we implement the caches avialable and based on the name we want that cache using cacheManager.getCache(cacheName);
+ public Cache getCacheByName(String cacheName) {
+        return cacheManager.getCache(cacheName);
+    }
+
+Now we move to controller and call related method with get request called "/cache"
+@GetMapping("/cache")
+    public Cache getCacheDetails(@RequestParam("name") String name) {
+        return cacheService.getCacheByName(name);
+    }
+
+7.Now start the application and test in postman using 
+GET request using http://localhost:8080/city
+click Params
+key: name   value: Chennai
+Click Send
+
+For the first time it will go to service getZipCode() and print "getZipCode method" but from second time it will not invoke this method so it wont print "getZipCode method"
+
+Once again click SEND, at that time it wont print "getZipCode method" because it takes from the cache
+
+8. Now we can what is present in cache name "city-zip-cache" for that again in postman with GET request give
+http://localhost:8080/cache?name=city-zip-cache
+
+So u can see under nativeCache with key Chennai and value is one city object 
+
+9. Suppose we are inserting one record into db, but u want whatever the result you are getting from db you need to put into the cache at that time we use @CachePut
+
+@CachePut(value ="city-zip-cache",key = "#city.cityName")
+    public City addCity(City city) {
+        cityZipCodeMap.put(city.getCityName(), city);
+        return city;
+
+    }
+Here we are adding city into the map, so whatever the data it returns it stores inside cache, so we have to give same name=city-zip-cache.
+   Previously we have cityName as parameter but now we have city object so that time how we can refer using key=#city.cityName
+
+10. If we want to delete that cache entirely using @CacheEvict
+ @CacheEvict(value = "city-zip-cache", allEntries = true)
+    public String removeCache(){
+     return "Cache removed Successfully";
+    }
+
+11. Now add the rest endpoint for adding and deleting the cache
+ @PostMapping("/city")
+    public City addCache(@RequestBody City city) {
+        return cacheService.addCity(city);
+    }
+
+    @DeleteMapping("/cache")
+    public String removeCache() {
+        return cacheService.removeCache();
+    }
+
+12. Now in postman run with POST request 
+http://localhost:8080/city and in body - raw - json give
+{
+  "cityName":"Bangalore",
+  "zipCode":"500031"
+}
+we get success response 200 and we added city into map
+
+In order to check whether city is added into cache with GET request using 
+http://localhost:8080/cache?name=city-zip-cache
+Now it will display only Bangalore city, in order to add another city in cache
+http://localhost:8080/city?name=Chennai
+In order to check whether city is added into cache with GET request using 
+http://localhost:8080/cache?name=city-zip-cache
+Now it display both Bangalore and Chennai
+
+13. In DELETE request give http://localhost:8080/cache
+will remove all city from caches
+
+Now if we check using GET request http://localhost:8080/cache?name=city-zip-cache
+it will be empty 

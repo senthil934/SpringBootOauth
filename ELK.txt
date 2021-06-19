@@ -1,0 +1,752 @@
+ELK - it is acronymn of 3 opensource project 
+
+E - Elasticsearch - is a search and analytic engine
+L - Logstash - is a server side data processing pipeline that inject data from multiple sources simultaneously and transforms the data and sends to elasticsearch
+K - Kibana - user to visualize data with charts and graphs. Kibana is browser based so we dont need any other tool to visualize other than browsers
+
+ELK stack is a great open source stack for log aggregation and analytics
+
+ElasticSearch - is a NoSQL database and distributed search and analytics engine
+if you look at the benefits
+easy installation and use
+a powerful internal search technology (build using Apache Lucene)
+a restful web interface
+open source
+noSQL (schema free json documents)
+
+Logstash - is a log shipping and parsing service in other words its a transportation pipeline used to populate elastic search with data
+benefits
+open source tool
+collects, parse and stores logs for futiure
+its a log aggregator
+open source
+
+Kibana - a web interface that connects users wit the elasticSearchDatabase and enables visualization and search options for system operation users
+benefits
+open source data visualization
+you can create graphical representation with logs very easily. even beginners can execute powerful log searches easily
+
+ELK stack is getting quite popular nowadays with a very large open source community
+
+If you have to compare Splunk with ELK - actually both are very good log platforms
+
+Splunk actually edges out ELK because of the less configuration needed to configure in Splunk forwarders, when compared to Beats and Logstash in ELK
+
+The ELK Stack is popular because it fulfills a need in the log analytics space. Splunk’s enterprise software has long been the market leader, but its numerous functionalities are increasingly not worth the expensive price. 
+ELK is a simple but robust log analysis platform that costs a fraction of the price.
+
+But cost is huge factor nowadays, and the real question you should be asking is if you need all the features of the spunk for the kind of money you are paying ?
+
+Ultimately, for ay small or medium enterprise having a low budget cost can go for ELK, and large enterprises should chooses splunk over ELK
+
+or you would like to get it done for a less cost using ELK
+
+Splunk is used by Adobe, CISCO, Symantec, Coca-cola, etc
+
+ELK is used by StackOverflow, LinkedIn, NetFlix, OpenStack, Medium.com, Accenture, etc
+
+
+Installation
+
+Prerequistes: JDK to be installed 
+
+1. Goto  https://www.elastic.co/downloads/
+2. Download Elastic search, Logstash and Kibana
+3. Extract all 3 softwares
+4. We can configure all 3 software till bin in env variable so that we can start anywhere 
+Path : c:/logstash/bin;c:/kibana/bin;c:elasticsearch/bin
+5. Go to cmd prompt and start elasticsearch server which start at 9200 port no
+   anylocation>elasticsearch.bat
+
+Elasticsearch is a rest based api, so to query elasticsearch u need to send rest based query
+6. To test elasticsearch server is working or not, go to browser and give http://localhost:9200
+
+7. Goto cmd prompt to start Kibana which start at 5601
+     >kibana.bat
+8. To test kibana is working or not, go to browser and give http://localhost:5601
+
+
+9. Create logstash.conf in any location or any name. It has 3 important parts input, filter(optional) and output. It is not json format 
+  input - will be standard input so we provide stdin
+  output - name of technology where u want to send our data. Now we want to send data to elasticsearch. Inside elasticsearch we can provide index of our data (any orbitary string)
+
+index {
+    stdin {}
+}
+
+output {
+   elasticsearch {
+       hosts => ["localhost:9200"]
+       index => "indexforlogstash"(name only lowercase)
+   }
+}
+
+10. Now we can use logstash.conf file using logstash
+11. Go to location of logstash.conf file in cmd prompt
+   c:/> logstash -f logstash.conf
+   
+
+Introduction to ElasticSearch
+    - Real time distributed and analytics engine
+    - Open source developed in Java
+    - search engine based on Lucene engine on top of which we have rest interface. So whatever search based engine works behind the scene we have restful api so api helps in fulfil the request and responding to request
+    - Supports full text search (ie) documents based instead of tables and schema and used for SPA projects
+    
+Why ElasticSearch ?
+1. Query
+    - In terms of query it lets u perform and combine many types of searches like structured and unstructured. It also helps in working upon the data based on geography and metrics. So irrespective of what type of data we have whether it is structured or unstructured or geo or metric elastic search all supports
+   - The best part is we can retrieve the result from the data which u import in anyway we want. So we write queries and retrieve results based on queries so we can ask query based on what you want
+
+2. Analyze 
+    - Let you understand billions of loglines easily because of the reason that it supports big volume of data you can import your logs and this search mechanism can help u to drill down the issue across millions of line of logs in a small period of time 
+   - It provides aggregation which helps to zoom out to explore the trends and patterns in ur data. Suppose we have cloud env of 500 nodes and we want to analyze entire infrastructure in a short period of time. The best way to do is using elastic search where we will importing the logs in elastic search and based on whatever response we are getting so we can get to the root cause of the issue in shorter period of time
+
+
+Spring Boot Elastic Search Implementation
+
+1. Create SpringBoot-ElasticSearch project with web,elasticsearch dependency,datajpa,Rest repositorirs, h2 database
+
+2. Create elastic search configuration in ElasticConfgiuration.java
+   - We use @EnableElasticsearchRepositories and provide with path of repository, so that spring boot scans that repo and identifies that as elastic search repository
+   - We need a bean for NodeBuilder which elastic search provides
+   - We create a temporary file called elastic   
+   - We create Settings which are required for elastic search to kickstart like http-enables, number of shards (The shard is the unit at which Elasticsearch distributes data around the cluster) and path for the dir where elastic should saved in this case it will stored in local repo so no in memory database, here it will store in file store
+
+3. Create entity class called Users.java which is denoted with @Document with indexName, type and shards which is specific to elastic search  
+
+4. Create UsersRepository which extends ElasticsearchRepository
+
+5. Create with Loaders.java with @Component
+       - Now we inject UserRepository and ElasticsearchOperations where we put all our mappings
+       - Inside Loaders we have @PostConstruct which executed whenever loader is completed
+       - Before we persist the data into elasticsearch we need to create a mapping. Now we need to add mappings to model class Users
+     operations.putMapping(Users.class);
+        Now we persist the data into repo,so we need some data so we create getData()
+    - So what loaders will do it will create a mapping for the users and once created it will load data into repository
+    - Since we annotate with @Component, so instance of this class will created when appl boots up and also we added @PostConstruct. So when Loader class is loaded, the final stage is loading of loadAll() method
+
+6. Create SearchResource.java, we are going to rest endpoint and it will load data from elastic search 
+  - Inject UserRepository which we created and using same repo we can get data
+  - We create rest endpoint for search by name, search by salary and display all users
+
+7. Start the application
+8. Goto postman with GET request give 
+http://localhost:8081/rest/search/all
+http://localhost:8081/rest/search/name/ram
+http://localhost:8081/rest/search/salary/12000
+            
+
+Spring Boot Elastic Search using Query DSL
+    - Previous example we use Spring JPA, now we use Query DSL
+
+1. In the same example, we create separate resource called QuerySearchResource.java to fetch data using query
+2. Create SearchQueryBuilder.java with @Component.
+     - We need ElasticSearchTemplate through which we query
+     - In order to use Query DSL we need QueryBuilder which comes from ElasticSearch. QueryBuilder is a abstract class and have implementation for NativeSearchQueryBuilder 
+    - Now we create a boolean query using QueryBuilders and should match and pass the text we are going to search inside queryStringQuery()
+    - There are different DSL used to set the field under which it is going to search like name and teamName. So we say elasticsearch to search this 2 fields based on particular text
+    - Now we match one more condition with wild card characters, where it will search text inside particular name or teanName. For eg, teamname is technology and somebody name is having tech then tht also will be searched 
+   - Now we use elasticsearchTemplate object to query with querybuilder build and return the list of users
+
+3. Start the application
+4. Run http://localhost:8082/rest/manual/search/account
+      - Once we search for account
+http://localhost:8082/rest/manual/search/tech
+      - Will display name with tech as well as teamname with tech
+
+5. In previous example, spring provides spring data elastic using that we use jpa kind of concepts called ElasticsearchRepository and override the methods and directly query elastic search. However elasticsearch itself provides query dsl with which we manually create queries and query the elasticsearch instance
+
+SpringBoot ElasticSearch
+   - Previously we created data manually and inserted that data into elastic search using ElasticSearchRepository provided bu Spring data
+   - Now we load data from database using Spring JPA and get that data and insert into elasticsearch
+
+1. Create UserJpaRepository inside jparepo package which communicates with H2 database
+2. We enable @EnableJpaRepositories(basePackages = "com.pack.jparepository") inside ElasticConfgiuration
+3. Next configure @Entity, @Id inside Users.class
+4. Next in Loaders class, we manually getting data, now we insert the data into h2 database 
+5. Start the appl, so it will store all data in h2 database as we use @PostConstruct
+6. Run as http://localhost:8082/rest/search/all
+      - Will display all data 
+
+Spring Boot Microservice - Online Shopping
+    - ProductService which expose as rest API backed by mysql which mainly takes care product info of appl
+    - InventoryService verify whether the product is in stock or not before the customer orders a product. It is also exposed as rest api backed with mysql
+    - OrderService expose as rest api backed with mysql. This takes care of processing orders placed by users. As part of order processing we make asynchronous  communication with inventoryservice and make resilient using Resilience4j
+    - NotificationService performs asynchronous communication using event driven architecture so as soon as order is placed we will fire an event and notificationservice listen for the event and send the order notification to the customers
+    - API Gateway microservice so that all request will routed to corresponding microservice. We are going to secure microservice using keycloak authorization server 
+    - We have Eureka server to register all microservices
+    - We have config server to keep all properties in centralize location
+    - If we want to store secret info like username and password it dosent make sense storing publically in git repository instead we need secure place to store them for that we use Hashicorp Vault to store all secrets in microservice architecture
+    - OrderService is communicating with InventoryService and for some reason inventory service is not responding. In this case continuously calling inventoryservice we execute fallback logic using Resilience4j
+    - As we have so many microservice it is hard to debug any issues. So if user performs a request and response is slow, we have no clue where the problem occurs so for that we use zipkin to implement distributed tracing so that we can trace a request chain and response time for each service
+    - ELK stack to implement centralized logging so that we can access logs of all the services at one place 
+
+Step 1:
+1.Create ProductService with web, mysql, spring data jpa
+2. Create model class, Repository class, Controller class
+3. Start the appl
+4. Using Postman try to insert the data with POST request as http://localhost:7000/api/product - body - raw - json
+{
+   "id":100,
+   "name":"Iphone",
+   "description":"Iphone 12 gold",
+   "price":12000
+}
+5. Using Postman try to fetch the data with GET request as http://localhost:7000/api/product
+
+Step 2:
+1. Create OrderService project with web, spring data jpa, mysql
+2. Configure db information in application.properties
+
+Step 3:
+  We have different microservice so we need automatic detection of microservice so we have service discovery
+1. Create DiscoveryService project with eureka server
+2. Configure eureka client for OrderService and ProductService
+ <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
+3. In ProductService, we provide service name  
+spring.application.name=product-service
+
+We give port=0, because we want to create multiple instance of product service and asking spring to dynamically assign portno at the time of startup
+
+server.port=0
+eureka.instance.instance-id=${spring.application.name}:${random.uuid}
+
+4. Similarly create same in order service 
+spring.application.name=order-service
+
+server.port=0
+eureka.instance.instance-id=${spring.application.name}:${random.uuid}
+
+5. Start DiscoveryService
+6. Start ProductService (multiple times also)
+7. Start OrderService (multiple times also)
+8. Check in http://localhost:8761 whether all service are registered
+
+Step 5: Centralized Configuration
+    We have different instance of product and order service. Now we want to change the property of product service, we have to checkout the code to local, change the property, compile the code and then deploy it. We have to take other instance of service and redeploy it once again
+   So we need centralized configuration to store all common configuration properties and dynamically affected whenever any changes occurs. Whenever we do any changes it has automatically update the repository for that we use spring cloud bus
+
+1. Create ConfigurationServer project with configserver, rabbitmq and actuator dependency
+2. Use @EnableConfigServer to act as config server
+3. Configure github details in application.properties
+4. Create order-service.properties, product-service.properties in github and move the db info into git
+
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+spring.jpa.show-sql = true
+spring.jpa.hibernate.ddl-auto = update
+spring.jpa.database-platform=org.hibernate.dialect.MySQL5Dialect
+
+5. Now we want to add config client for both service so it will consume all info from config server. So we havr to add config client, spring cloud starter bootstrap (used to read the info from config server at time of bootstrapping the server) and actuator dependency
+6. Add config server info in bootstrap.properties as it would understand the config server at time of startup
+7. Now move all info from application.properties to bootstrap.properties
+
+spring.datasource.url=jdbc:mysql://localhost:3306/micro
+spring.datasource.username=root
+
+spring.datasource.password=root
+spring.cloud.config.uri=http://localhost:8888
+management.endpoints.web.exposure.include=*
+spring.application.name=product-service
+server.port=0
+eureka.instance.instance-id=${spring.application.name}:${random.uuid}
+
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+
+So if u do any changes then we have to provide /actuator/bus-refresh which will refresh all properties automatically
+
+8. Now start configurationserver,discoveryserver,productservice,orderservice and check whether it works
+9. Go to postman and chech with POST request, http://localhost:53187/api/product and check whether product is inserting
+You can get port no from the console
+
+Step 6: Create API Gateway
+     - API Gateway acts as an entry point of client side request into our appl. In microservice architecture, the outside world will not know whether we access order service or productservice
+     - The client will make the call to apigateway and then api gateway will route the client request to particular service. API Gateway also takes care of authentication and other cross cutting concerns like monitoring, rate limiting.
+     - Here we study how to secure the service and authenicate the client using keycloak authorization server.
+
+1. Create APIGateway-Service project with cloud gateway, eureka client
+2. Define @EnableEurekaClient
+3. Configure route property in application.properties
+
+spring.application.name=api-gateway
+spring.cloud.gateway.discovery.locator.enabled=true #spring cloud gateway can integrate with eureka server
+
+#Routing configuration
+spring.cloud.gateway.routes[0].id=product-service
+spring.cloud.gateway.routes[0].uri=lb://product-service
+spring.cloud.gateway.routes[0].predicates[0]=Path=/api/product
+spring.cloud.gateway.routes[1].id=order-service
+spring.cloud.gateway.routes[1].uri=lb://order-service
+spring.cloud.gateway.routes[1].predicates[0]=Path=/api/order
+
+-#spring.cloud.gateway.routes[0].uri=http://localhost:portno (But we discussed ProductService running on random portno, so we cant add network address since port can change anytime. So we give service name registered in eureka (ie) lb://PRODUCT-SERVICE and we add lb prefix to suggest service should be load balanced)
+
+- We dont want to define PRODUCT-SERVICE as uppercase, so we define a property to use lowercase of property using 
+  spring.cloud.gateway.discovery.locator.lower-case-service-id=true
+
+-Next we have to define actual path which triggers the route to productservice which can define through Predicate which takes key value pair, where key as "path" and value as "/api/product"
+spring.cloud.gateway.routes[0].predicates[0]=Path=/api/product
+
+-Next we define eureka instance id property so api gateway can be uniquely identify inside eureka service
+eureka.instance.instance-id=${spring.application.name}-${random.uuid}
+
+4. Now if we run apigateway appl, it starts netty server instead of tomcat because spring-cloud-gateway project is build on top of Project Reactor which helps us to create reactive appl. This project is build on Netty server
+    It will register on Eureka server
+
+5. Instead of running ProductService with some random port no, now run productservice using APIGateway
+http://localhost:8080/api/product
+
+{
+   "id":101,
+   "name":"Redmi",
+   "description":"Redmi 7",
+   "price":15000
+}
+Check whether it is inserted
+
+6. Now we secure api gateway so only authenticate user will make calls to our services. 
+   -Keycloak is identity and access management server which mainly handles user authorization and user authentication related project. Keycloak provides single signon and social login so no need to worry about implement them in ur appl 
+
+7. Install Keycloak
+       - Goto keycloak.org/downloads
+       - Download zip file
+       - Goto bin folder and run standalone.bat to start keycloak with run in default port 8080 so we run as
+keyclaok/bin> standalone.bat -Djboss.http.port=8180
+        - Now goto localhost:8180 where it redirect to localhost:8180/auth where it will ask to create initial admin user. Provide credinats under Administration console
+        Username: admin
+        Password: abcd1234
+        Password Confirmation: abcd1234
+          Click Create 
+Will say User Created         
+        - Once u created click on Administration console
+        - Give username and password
+        - After login we have create realm which is core concept of keycloak which is like a container where u can store all users, client and appl info
+        - Click Add Realm under Master
+        -Name: microservices-realm - Click Create
+Now we need to register our gateway as client inside keycloak
+        - Click Clients are nav bar in the side
+        - Click Create
+    Client ID: spring-cloud-gateway-client
+        Click Save 
+Now we can provide name, description, access type
+    Access Type: Confidential (we want auth to be done inside appl)
+    Valid Redirect url: http://localhost:8080/login/oauth2/code/spring-cloud-gateway-client
+This is default url of oauth2/code followed by client ID. So keycloak will redirect to this url when login is successful
+   Click Save
+  - Now client secret will generated in Credentials tab We can use this client secret to authenticate from gateway server to keycloak server
+  - Now we have to create test user so we have login into keycloak server
+   Click Users in the side - Click Add User 
+Username: testuser
+email: testuser@gmail.com
+Firstname: test
+lastname: user
+  Click Save 
+   - Configure password for the user in Credentials tab
+Password: abcd
+PasswordConfirmation: abcd
+Temporary Password: OFF
+  Click SetPassword 
+       
+8. In ApiGateway-Service appl, now we configure spring-cloud-starter-security and spring-boot-starter-oauth2-client dependency to enable spring security and configure our api gateway as oauth2 client 
+<dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
+
+9. Next we have configure keycloak details in gateway server 
+   Click Realm Settings - Click OpenID Endpoint Configuration
+Here we can see all endpoint info we need to access keycloak from our gateway appl
+   - Provide issuer uri in property file and spring will read all necessary configuration from OpenID configurtion
+spring.security.oauth2.client.provider.keycloak.issuer-uri=http://localhost:8180/auth/realms/microservices-realm
+
+10. Now register client details in our project so we use 
+spring.security.oauth2.client.registration.spring-cloud-gateway-client.client-id=spring-cloud-gateway-client
+spring.security.oauth2.client.registration.spring-cloud-gateway-client.client-secret=cd7d30cd-94ae-4b65-b922-5ce85632ae60 (copy the secret from credential tab of Clients)
+spring.security.oauth2.client.registration.spring-cloud-gateway-client.provider=keycloak
+spring.security.oauth2.client.registration.spring-cloud-gateway-client.authorization-grant-type=authorization_code
+spring.security.oauth2.client.registration.spring-cloud-gateway-client.redirect-uri=http://localhost:8080/login/oauth2/code/spring-cloud-gateway-client
+
+11. Configure Spring Security Oauth2, so we create SecurityConfig.java 
+   - As API Gateway is based on Project Reactor we can enable security module in project by using @EnableWebFluxSecurity
+   - Next we create bean to create spring security filter chain. Here we provide configuration that all incoming request should be authenticated by oauth2 provider. With this way we have configured Apigateway to use keycloak authorization server
+
+12. Next we define ProductService as resource server, all microservice are configured as resource server but as now we have endpoints in ProductService so we configure it as resource server 
+   In pom.xml of ProductService we configure 3 dependency 
+//To define ProductService as Resource Server 
+ <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-resource-server</artifactId>
+        </dependency>
+//To read keys coming from authroization server and validate the incoming tokens
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
+//To enable spring security 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+13. Configure one property in ProductService bootstrap.properties 
+spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8180/auth/realms/microservices-realm
+which is copied from OpenID endpoint configuration
+
+14. We have to enable security in ProductService, we create class SecurityConfig which extends WebSecurityConfigurerAdapter with @EnableWebSecurity and override configure() and inside the method we configure all incoming request should be authenticated using oauth2 login mechanism
+
+15. Now start all the appl
+
+16. Now we test Apigateway implementation with keycloak
+http://localhost:8080/api/product in browser
+
+Which will redirect to keycloak login page and give user credential we created
+   username: testuser
+   Password: abcd
+     Click Log in
+
+If we click on login we get 401 error, because we provide login credentials to keycloak and keycloak send a token as respone to API Gateway. Now APIGateway has access token but when try to access ProductService its not including token in the request. So we have to transfer token to each service call. For example apigateway will send info to productservice and if productservice also calling inventoryservice then we should also include token for invoking inventory service. This mechanism is called Token relay 
+    So we have enable token relay in APIGateway service so that token information will send to all downstream microservice
+
+In APIGateway-Service, appilcation.properties we define
+spring.cloud.gateway.default-filters=TokenRelay
+
+17. Restart all appl and access http://localhost:8080/api/product, give username and password as "testuser" and "abcd" which access all products info 
+
+
+Step 7: Circuit Breaker pattern using Resilience4j
+    OrderService is having synchronous communication with InventoryService. This is the place where we implement CircuitBreaker because at any point of time if orderservice wants to call inventoryservice, the inventoryservice can go down or due to network issues response may be slow to our request.
+    Create InventoryService project which is responsible to check inventory  of the product and response to order service whether they are instock or out of stock. OrderService will place order successfully if all product in stock. If it is not in stock it will fail the order 
+
+1. Create InventoryService project with web,spring data jpa, mysql, oauth2 resource server, eureka client, config client, rabbit mq bus, starter security,starter bootstrap
+
+2. Create entity Inventory class for InventoryService
+3. Create InventoryRepository extends JPARepository
+4. Create InventoryRestController to access inventory request "/api/inventory"
+    Create isInStock() which checks value of stock is greater than 0 and return boolean
+5. Create inventory-service.properties in github
+6. Configure all config server, db, rabbitmq,oauth2 properties in bootstrap.properties
+7. Create table Inventory
+create table inventory(id int primary key,sku_code varchar(50),stock int);
+  - Insert the data into inventory table
+INSERT INTO `inventory` (`id`, `sku_code`, `stock`) VALUES ('1', 'IPHONE_12_RED', '100');
+INSERT INTO `inventory` (`id`, `sku_code`, `stock`) VALUES ('2', 'IPHONE_12_GREY', '0');
+8. Start ConfigurationServer,DiscoveryService and InventoryService appl and check whether inventory data is inserted into inventory table
+
+
+Step 8: Implement logic in OrderService
+   Previously we set up OrderService
+1. Create model class Order with id, orderNumber and list of OrderLineItems
+2. Create OrderLineItems with id,skuCode,price,quantity
+3. Now we enhance the functionality by calling the inventory service and checking stock of the product inside OrderLineItems. For that we need access to Rest client api to make some rest api to inventoryservice. We can 3 types called RestTemplate makes blocking calls (ie) after firing the request it waits for the response, WebClient (make nonblocking as well as blocking calls) and FeignClient
+
+-Now add Feign client dependency
+ <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-feign</artifactId>
+            <version>1.4.7.RELEASE</version>
+        </dependency>
+-Add @EnableFeignClient in main class
+-Create InventoryCleint interface to call InventoryService from OrderService. 
+
+4. Create OrderController with placeOrder() with @PostMapping and create class OrderDto which is request body for post endpoint 
+     Inside placeOrder(),we call checkstock() and if it is true we save order to database and return "order placed successfully" to client or else we return "order failed"
+
+5. We add inside bootstrap.properties as
+spring.cloud.loadbalancer.ribbon.enabled=false
+because loadbalancer is define by Feign client
+
+6. In our case APIGateway is calling OrderService, OrderService calling InventoryService through FeignClient. When FeignClient token relay will not work because token relay use different mechanism to add token to the authorization 
+   So any request sending from OrderService we have to intercept that request, retrieve the token fom Security context and add to the authorization header for that we need special bean called RequestInterceptor
+
+- In OrderServiceApplication class, create requestTokenBearerInterceptor() with return type as RequestInterceptor and  create new anonymous object for RequestInterceptor 
+    Inside we retrieve authentication object from SecurityContext and casted into JWTAuthenticationToken object
+    Now we add authorization header to bearer token 
+
+7. Start all appl
+
+8. We need to make post call to OrderService, so we create json body as
+http://localhost:8080/api/order
+
+{
+   "orderLineItemsList":[
+      {
+         "skuCode":"IPhone_12_RED",
+         "price":1230,
+         "quantity":1
+      }
+    ]
+}
+
+Now we need access token to make request throuhg api gateway. In Postman
+  - Select Authorization - Select Type OAuth2.0  
+
+CallbackUrl:http://localhost:8080/login/oauth2/code/spring-cloud-gateway-client  (copy redirect-uri in apigateway application.properties)
+
+Goto localhost:8180/auth - login as admin,abcd1234 - Click Realm Settings - Microservices Realm - Click OpenID Endpoint Configuration
+
+Auth URL: Copy paste authorization_endpoint url
+Access Token URL: Copy paste token_endpoint url
+Client id: copy paste client_id from apigateway application.properties
+Client Secret: copy paste client_secret from apigateway application.properties 
+Scope: openid
+State: 12345 (any random value)
+
+Click Get New Access Token - Provide credential - You can get Access token 
+
+
+
+Centrailize Logging in Microservice using ELK stack
+      - Basically to perform centralize logging mechanism in Microservice we need to integrate these 3 components
+      - Elasticsearch is nosql database based on Lucene search engine which helps us to store the data 
+      - Logstash is alog pipeline tool that accepts inputs/logs from various sources and exports the data to various targets
+      - Kibana used for visualization purpose which helps developer to monitor application logs from UI
+      - In general Elasticsearch used to store date, logstash used to process data and kibana used to visualize the data 
+      - Once we generate log file of our appl, the log file we  need to give to logstash, logstash will read those log files and will send to elasticsearch. As elasticsearch is nosql db which store those log data. Then Kibana will keep on pulling from elasticsearch those log data to display in user interface
+      - Here we create Spring boot project, then we generate logfile of spring boot appl, then we give logfile to logstash, then logstash send those data to elasticsearch, then logdata will send to Kibana for visualize purpose
+
+1. Download logstash,kibana,elasticsearch from https://www.elastic.co/downloads/ and extract
+2. We can configure all 3 software till bin in env variable so that we can start anywhere 
+Path : c:/logstash/bin;c:/kibana/bin;c:elasticsearch/bin
+3. In cmd prompt, run elasticsearch.bat, to check in browser run http://localhost:9200 which display info abt elasticsearch
+4. Before running kibana, go to kibana/config folder - open kibana.yml
+uncomment line, elasticsearch.hosts: http://localhost:9200
+because we need to inform Kibana where elasticsearch is running
+5. In cmd prompt, run kibana.bat, to check in browser run http://localhost:5601 which shows Kibana dashboard   
+6. Create SpringBoot-ELK project with web dependency
+7. Create User class with id,name
+8. We have Controller class with getUsers() which return list of user object. Based on the request, it returns single user based on id. If id is present it returns the user, if not it throws exception and print using logger class
+9. Now we generate log files, so we configure in application.properties
+server.port=9898
+spring.application.name=ELK-STACK-EXAMPLE
+logging.file.name=C:/logs/elk-stack.log
+
+10. Create logstash.conf inside bin of logstash which inform logstash where log file is located 
+
+input{
+   file {
+      path => "C:/logs/elk-stack.log"
+      start_position => "beginning"
+   }
+}
+output {
+   stdout { codec => rubydebug }
+   elasticsearch {
+      hosts => ["localhost:9200"]
+      index => "indexforlogstash"   (names only in lowercase)
+   } 
+}
+
+11. In cmd prompt run 
+c:\logstash\bin>logstash -f logstash.conf
+12. Start the appl
+13. Run http://localhost:9898/getUser/1 will display 
+14. If we give http://localhost:9898/getUser/11, it display empty object with exception in console
+15. Go to folder and check whether log file is created
+16. Go to logstash where we can see logs with timestamp
+17. Run once again  http://localhost:9898/getUser/1  to see logs in logstash
+18. Let verify the indexes, run http://localhost:9200/_cat/indices
+    Now we can see indexes internally created by ELK, for our logging purpose indexforlogstash created by logstash itself so we can give in our kibana console
+19. Goto Kibana using http://localhost:5601, in the sidebar goto Stack Management - click Index Patterns - click Create Index Pattern
+  Index Pattern: indexforlogstash  - click Next step
+  Time Filter: I dont want to use time filter - Click Create Index Pattern
+Now we can see all logs in Kibana console, Under Analyze - Click Discover in side bar
+20. In that give ctrl F and search by name or id to see logs
+21. once again  http://localhost:9898/getUser/2  to see logs in Kibana as well as on logstash console 
+
+
+Splunk
+    - It is a software which provide wide varity of option for us to configure. For example, we can monitor the log, search across logs, create an index, stream all logs in common location and search that particular whole log directory.
+
+Splunk is the ultimate log collection and analysis tool. 
+  - Splunk does realtime log forwarding (ie) it can collect logs from one particular instance or one particular server and forward those logs to a remote instance 
+  - Splunk does realtime syslog analysis (ie) it can monitor any application based on whatever system logs are generated in real time and we can perform analysis on that
+  - Real time server monitoring and understand what is IP traffic, how many people are there on your website, what actions are they trying to perform 
+  - Splunk can give real time alerts and notification,if someone accessing the network from unreliable source then immediately you can configure Splunk such that it would throw an alert when request coming from that particular IP range. You can also install splunk in some system and monitor CPU performance and whenever CPU performance crosses threshold then ur system might crash so at that time we can give alert
+   - Historical data store and performing analysis on that data, whatever data comes in realtime that can be stored in Splunk indexes which is database for Splunk from there we can perform analysis
+   - Splunk customers are vodafone, Dominos, Iing bank, Newyork airbrake
+
+Splunk Components
+  - Three important components are forwarders, indexes and search heads 
+  - Forwarders are responsible for collecting your data and forwarding it to another splunk instance and in this case it would be indexer
+  - Indexer is where the data is being stored (ie) whatever logs coming are stored in indexer
+  - But when it is inside the indexer you cant just look at this data we use search head which will in turn access the data that is present in indexer and it will let u do the analysis or visualization and reporting, gives you alerts notification 
+  - So we interact with search head and it access the data from the indexer and it will get data from forwarder
+
+
+
+Grafana
+   - After deploying an application in production env our main concern becomes to provide the best experience to the end user for that monitoring the application health is an important aspect.
+   - We always want to ensure that if something goes wrong with the server or application health we should get an alert before it affects the enduser. 
+   - For server monitoring and alerting grafana comes into the picture. Grafana is a tool which helps us to monitor application and server health
+   - If something goes wrong with the application health, grafana can trigger customized alerts as well. Grafana supports customizable and beautiful looking dashboard with colorful graphs.
+
+1. Create Springboot project with web, actuator 
+2. Create TestController 
+
+@RestController
+public class TestController {
+    @GetMapping("/monitor")
+    public String monitor(){
+        return "hello world";
+    }
+}
+
+3. Start the application and run http://localhost:8080/monitor which prints "Helloworld"
+
+4. What do you mean application health?
+    - There can be different metrics to monitor application health like how much memory is the application consuming or what is the cpu consumption by the application
+    - If we say specifically about Java based application health measurement can be done based on heap memory usage, garbage collection timing etc
+    - Using actuator we can get different appli related information quite 
+
+5. Configure actuator info into application.properties
+management.endpoints.web.exposure.include=*
+management.endpoint.health.show-details=always
+
+6. Restart the appl and give http://localhost:8080/actuator, it will provide all endpoints 
+
+7. Now hit http://localhost:8080/actuator/health which displays memory consumption information 
+
+But to make these information visible in separate dashboard we need the data in a specific customized format for that we use prometheus. To use prometheus with our spring boot appl we will have to add prometheus dependency 
+<dependency>
+   <groupId>io.micrometer</groupId>
+   <artifactId>micrometer-registry-prometheus</artifactId>
+   <version>1.7.0</version>
+</dependency> 
+
+8. Restart the appl, run http://localhost:8080/actuator we can see the endpoint related to prometheus http://locahost:8080/actuator/prometheus
+
+9. Run http://locahost:8080/actuator/prometheus which provide different health measurement metrics 
+
+10. Download Prometheus server from http://prometheus.io/download and extract the folder.
+   - Inside we have prometheus.yml where we add few configurations. Under scrape_configs add new job after targets
+
+   -job_name: 'spring-actuator'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s - means in each 5s appl health data will be fetched from the actuator endpoint
+    static_configs:
+    - targets: ['localhost:8080'] - specify appl portno
+
+11. Start prometheus server - run prometheus.exe
+c:/promethus> .\prometheus.exe
+which starts in 9090
+   - Run http://localhost:9090 which opens prometheus dashboard. 
+   - We can select different endpoints and click Execute
+   - After that Click Graph which displays the graph. Like that we can select different endpoints
+
+12. Next is to setup Grafana, if prometheus is providing the data and graph, then why we need grafana because grafana ui is much more customizable and provides us a better insight at a glance on the appl health 
+   - Download Grafana from http://grafana.com/grafana/download?platform=windows
+   - Extract the zip file 
+   - Start Grafana server
+c:/Grafana/bin>.\grafana-server.exe
+    which starts the server in port 3000
+   - Open http://localhost:3000 in browser
+       Default username and password is admin,admin
+       After that we can change new password 
+
+Step 1: Set up data sources
+
+Right side click Configuration - Data sources - Click Add Data Source - Click Select prometheus
+
+url: http://localhost:9090
+Click Save & Test - which shows Datasource Updated 
+Click Back - we can see Prometheus has added data source
+
+Step 2: Create a dashboard
+   Right side click + - Create - Dashboard - Add empty panel
+
+Metrics browser: go_memstats_alloc_bytes (copy the related metrics from prometheus dashboard)
+  will generate graph - Click Last 6 hrs and reduce the time range to Last 15 minutes for better viewm
+   Click Save and Apply
+Now first graph is added in our panel
+
+Step 3: Click Add Panel in top - Click Add Empty Panel
+
+Now we add different metric copied from Prometheus dashboard
+Metrics browser: go_gc_duration_seconds
+   Will generate graph for garbage collection
+ Click Save and Apply
+
+Now we add two panels now.
+
+Step 4: Click Settings - Click JSON Model
+
+which holds all the configuration of our dashboard in JSON 
+
+Click Save Dashboard - Name: Spring Dashboard - Click Save
+ 
+13. There are different grafana dashboarda are avialable in json in internet, we import one such json instead of creating dashboard 
+1. Goto grafana.com/grafana/dashboards/12900 which is created by some user and published in the internet
+2. Click Download JSON 
+3. Goto Grafana dashboard - Click + - Click import - Click Upload Json file - select the downloaded json file
+4. Under Prometheus - Select Datasource - Prometheus(default) - Click Import
+5. Now a dashboard is ready with different health metrics of an application
+
+14. Set up email alerts 
+1. Goto Grafana folder - conf - edit defaults.ini
+2. Find out [smtp] section and we need to set email configuration
+[smtp]
+enabled=true
+host=smtp.gmail.com:465
+user=senthil1418@gmail.com (from whom alert has to send)
+password=mail id password
+3. Save the file
+4. Restart grafana server 
+5. Goto Grafana dashboard - Right side Alerting - Notification Channel - Click Add Channel 
+   Name: Alert Admin
+   Type: Email
+   Addresses: give mail id to which notification would send
+   Click Test - show "Test notification send" if everything are good
+6. If we go email account and check we get new email from grafana 
+7. Click Save
+8. Goto Manage dashboard - Click Manage
+    - We can see 2 dashboard, one is created by us and another created by importing json file
+9. Click Spring APM dashboard which has alert for CPU Usage - Click CPU Usage - Click Edit
+   - Adding Alert in Grafana is not supported when template variables being used in Prometheus query, which means from query section we need to remove all the variables mentioned with $ sign
+  Metric browser: system_cpu_usage
+  Metric browser: process_cpu_usage
+10. Goto Alert tab - click Create Alert 
+  We need to define the rule when alert should be triggered
+Rule:
+  Name: High CPU usage alert 
+  Evaluate every: 5s (rule should be checked every 5s)
+  For: 10s (the alert should triggered only if the rule condition is violating for more that 10s)
+Now we need to define conditions;
+Conditions:
+  when: max()  
+  OF: query(A,10s,now)   IS ABOVE: .3
+The alert should be triggered if the maximum system CPU usage in last 10s is above 0.3, now we need to add notification channel which means if cpu usage is more than 30% where do we need to send notification
+
+Send to: Alert Admin
+Message : High CPU Usage Warning 
+Click Save and Apply
+
+11. Now we need to write a code which will consume my cpu to test our alerting functionality, so go to TestController.class
+
+public String monitor() {
+   try {
+      boolean condition=true;
+      while(condition) {
+          Runnable r= () -> { while(true) { } };
+          new Thread(r).start();
+          Thread.sleep(5000);
+      }
+   }
+   catch(Exception e){ }
+   return "Hello world";
+}
+We are creating multiple threads inside an infintie loop and each thread will invoke another infinite loop which means threads will never die so numerous threads will be alive and will increase CPU usage 
+
+12. Restart Spring boot appl, and run http://localhost:8080/monitor
+so whenever we hit monitor endpoint we should be able to see cpu usage is increasing rapidly, so if we go to grafana and refresh we can see heart symbol is broken and in my email inbox we can see mail alert from grafana

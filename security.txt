@@ -17,7 +17,7 @@ Authorization & Authentication
    - Spring Security concept can be used in both Spring MVC and Spring Boot also. But the difference is in Spring MVC we have to add lot of plugins and write more code. But in SpringBoot we havto add just 1 plugin with less code. If we are using Spring Boot 2 version and if u r having password in ur appl, then Spring Boot ask what type of encoding/encryption technique 
    - By default, Spring Boot give BCrypt password encoder or without password encoder
    - Bcrypt password encoder will generate different password for same string in different situation of length 60 so hacker cant able to hack it easily but in SHA, MD5 each time the length will differ
-   - bcrypt is a password hashing function designed by Niels Provos and David Mazières, based on the Blowfish cipher. Bcrypt uses adaptive hash algorithm to store password.BCrypt internally generates a random salt while encoding passwords and hence it is obvious to get different encoded results for the same string.But one common thing is that everytime it generates a String of length 60.
+   - bcrypt is a password hashing function designed by Niels Provos and David MaziÃ¨res, based on the Blowfish cipher. Bcrypt uses adaptive hash algorithm to store password.BCrypt internally generates a random salt while encoding passwords and hence it is obvious to get different encoded results for the same string.But one common thing is that everytime it generates a String of length 60.
 
 
 1. If we extends WebSecurityConfigurerAdapter which contains 2 methods
@@ -51,7 +51,44 @@ Steps
 4. Code UserRepository
 
 
+What is JSON Web Token?
+   - It is open standard, used to securely transfer information between two bodies (ie) any two users or any two servers 
+   - It is digitally signed which means the information is verified and trusted there is no alternation of data in between the transfer
+   - It is compact that u can send it via url as get request or post request or HTTP header so it is fast, that fast transmission makes JWT more usable 
+   - It is self contained it means, that JWT token itself contain information about the user and this avoids querying the database more than once 
+     Suppose u have logged in or ur user just logged in one time, u verify the information like username, password so u just provide the token. So every other time the user going to request something from ur website, u dont have to login, u just have to pass that token and then JWT system will just verify that token, and if it is correct it gives the response to that request
 
+Why JWT is useful?
+    - Authentication
+        JWT is useful in case of authentication 
+    - Information exchange
+        used for exchanging information between any two bodies
+
+What is JWT structure?
+    Consider aaaaaaaa.bbbbbbbbb.ccccccccc, here a part is called header, b part is called payload and c part is signature 
+    1. Header 
+{
+   "alg":"HS256",
+   "typ":"JWT"
+}
+       It is a json object, it includes 2 fields and first is alg which is algorithm like HMac,sha-256,RSA. This alg will tell JWT that in which algorithm it is encoded
+    typ means the type of web token which is JWT
+    This header JSON is base64Url encoded to form first part 
+
+   - Payload is also JSON object which contain claims which are user details or additional metadata like expiry date of token, whether it is admin or not. Payload itself is base64 encoded url to form second part.
+   - Signature
+       We told JWT that in the header we are using this kind of token and encode with this type of algorithm, but how we will ensure that this data will not change while transferring to one body to other body so we use signature
+       Signature uses base64 header then concatenate with base64 version of payload and all these things use HMac sha-256 encoded. This algorithm contains header base64, payload with a secret 
+
+So after combining all these three we get JWT with dot
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+The first is base64 version of header, second one is base64 version of payload and thrid one is base64 of header.base64 of payload.secret all these things use HMacsha-256 encoded to form the signature 
+
+How JWT works?
+   From the browser u send a post request to the server with credential like username and password, then server verify it and afterthat it generates with secret and then that passed back to the browser, then we send JWT on header on the post request on url to access some protected resources on our website 
+   On the server first we check about JWT, if JWT signature matches with the signature we have defined then it issue the information that everything is good and respond to client
 
 JSON WEB TOKEN
    - Best secure way to communicate between client and server

@@ -165,13 +165,22 @@ Click Send
 
      
 
-Spring Oath2
+Spring Oauth2
     - Let say we are building ur website where u want to provide security, where ur user want to login ofcourse we can have own database or own way of verifying the user. 
    - But we have one issue, if u have user details in ur database or ur server, u have to protect it. Ofcourse it becomes difficult to manage the database ip, if someone hacks it u r responsible.
    - Second issue even if we have database or own server most of the user using some type of social networking login, for example ur consumer has google account or facebook account. So can we have google login in ur website, so we dont want to manage the data, it will manage by Google.
    - For that we have a feature called OAuth2
 OAuth 2 is an authorization framework that enables applications to obtain limited access to user accounts on an HTTP service, such as Facebook, GitHub, and DigitalOcean. It works by delegating user authentication to the service that hosts the user account, and authorizing third-party applications to access the user account. OAuth 2 provides authorization flows for web and desktop applications, and mobile devices.
 
+What is OAuth2?
+    - OAuth is open standard for access delegation, so it is not for authentication only, it is for access delegation so basically u delegate ur authority to somebody else. It is not authentication protocol it is authorization standard
+    - OAuth also provides secured delegate access to server resource on behalf of resource owner 
+    Suppose we have google account, however u r accessing bank statement and bank statement asks to provide google account and get redirected to google page, from there google asks whether u want to authorize ur bank to redirect or give information about u to bank 
+   So literally bank does not have ur username and password from google so instead it will just delegate the URL or the request to google and google will authenticate u and then Google will ask u what all the accesses do u need to give to the bank. So basically the authorization information is received from google to the bank and the bank uses that for further any communication
+    - OAuth2 is more of a framework then a defined protocol 
+
+   Consider we log into ur city bank account for some reason and citybank is asking to authenticate ur facebook account. So imagine city bank server as authentication client and Facebook server as authentication server.
+ 
 
 Steps: SpringBootOauth2-Github
 

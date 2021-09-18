@@ -1,8 +1,8 @@
 ELK - it is acronymn of 3 opensource project 
 
-E - Elasticsearch - is a search and analytic engine
-L - Logstash - is a server side data processing pipeline that inject data from multiple sources simultaneously and transforms the data and sends to elasticsearch
-K - Kibana - user to visualize data with charts and graphs. Kibana is browser based so we dont need any other tool to visualize other than browsers
+E - Elasticsearch - is a search and analytic engine - Highly scalable search index server
+L - Logstash - is a server side data processing pipeline that inject data from multiple sources simultaneously and transforms the data and sends to elasticsearch - Tool for the collection, enrichment, filtering and forwarding of data (ie) log data
+K - Kibana - user to visualize data with charts and graphs. Kibana is browser based so we dont need any other tool to visualize other than browsers - Tool for the exploration and visualization of data
 
 ELK stack is a great open source stack for log aggregation and analytics
 
@@ -32,7 +32,7 @@ If you have to compare Splunk with ELK - actually both are very good log platfor
 
 Splunk actually edges out ELK because of the less configuration needed to configure in Splunk forwarders, when compared to Beats and Logstash in ELK
 
-The ELK Stack is popular because it fulfills a need in the log analytics space. Splunk’s enterprise software has long been the market leader, but its numerous functionalities are increasingly not worth the expensive price. 
+The ELK Stack is popular because it fulfills a need in the log analytics space. Splunkâ€™s enterprise software has long been the market leader, but its numerous functionalities are increasingly not worth the expensive price. 
 ELK is a simple but robust log analysis platform that costs a fraction of the price.
 
 But cost is huge factor nowadays, and the real question you should be asking is if you need all the features of the spunk for the kind of money you are paying ?
@@ -44,6 +44,15 @@ or you would like to get it done for a less cost using ELK
 Splunk is used by Adobe, CISCO, Symantec, Coca-cola, etc
 
 ELK is used by StackOverflow, LinkedIn, NetFlix, OpenStack, Medium.com, Accenture, etc
+
+
+Why ELK in SpringBoot?
+     Spring boot appl are deployed in production env and once u deploy in prod env, if u want to observe any success or failure messages and everything will be placed in log file. Log file is generally a text file and we have to open this file and search manually. Now we want to visualize this log file searching using UI, for that purpose we use ELK 
+
+ELK Architecture
+   - We have placed our appl in production env (ie) in server and client is making the request and getting the response. 
+   - In this appl there could be some errors or warning or success message and everything taken into log files by using slf4j. This log file will contain so many number of lines and searching this log file is not easy process 
+   - Now we want to show the log file as visualize format so that developer can search in easy way in UI by using Kibana. But someone has to read this logfile from different location for that we use logstash. Once u read the logfile we can filter some content based on date or time or content then we can use elasticsearch which analyse our content and give to Kibana 
 
 
 Installation
@@ -750,3 +759,601 @@ We are creating multiple threads inside an infintie loop and each thread will in
 
 12. Restart Spring boot appl, and run http://localhost:8080/monitor
 so whenever we hit monitor endpoint we should be able to see cpu usage is increasing rapidly, so if we go to grafana and refresh we can see heart symbol is broken and in my email inbox we can see mail alert from grafana
+
+
+
+
+
+Spring Data ElasticSearch
+      We will be building spring boot project together with elasticsearch. Now we are going to create an index which is like database, we can have multiple indexes and inside index we can find documents which is like tables inside database and inside documents we have fields which is like columns in tables.
+     Now we set up elasticsearch and then we are going to create index and see how u can index some data and how to query it 
+
+Step 1:
+
+1. Create SpringDataElasticSearch project with web and spring data elasticsearch dependency
+
+2. Create Config.java with @Configuration, @EnableElasticSearchRepository because we use elasticsearch repository, @ComponentScan so spring knows where are other components are present and also extends AbstractElasticSearchConfiguration and override 
+elasticsearchClient() method
+   Next RestHighLevelClient is used to interact with elasticsearch which configure the connection to the elasticsearch that we are running. We have ClientConfiguration which connected to that url and we use ClientConfiguration.builder() to build the connection and we use RestClient.create() to create using rest()
+
+3. In application.properties configure
+elasticsearch.url=localhost:9200
+
+4. Next we create the settings, we can create in bunch of ways like using Java API or using Maps or using static json file where u define settings as json and 
+apply that json to all of ur documents
+   Inside resource-static folder create es-settings.json
+{
+  "index": {
+
+  }
+}
+
+5. Create Person.java which act like entity with id which has @Id and @Field(FieldType.keyword) and name with @Feild(FieldType.text) property which will be indexing 
+   FieldType.keyword is used for ids, emails, hostnames etc and FieldType.text used for something human readable like name, email content. This is called mapping which basically create the mapping of this index 
+  Now we annotate Person class with @Document(indexName = Indices.PERSON_INDEX), which informs elasticsearch that Person class is document and belongs to certain index. Instead of defining the index directly, we can create helper class called Indices which containing the constant 
+    public static final String PERSON_INDEX = "person";
+  Now we want to apply the settings using @Setting which  has the setting path to json we created 
+
+6. Next we create repository for Person called PersonRepository which extends ElasticSearchRepository which comes with Spring data elasticsearch dependency 
+
+7. Now we create PersonService.class inside service package to interact with repository 
+
+8. Next we create PersonController.class used to interact with service class 
+
+9. Run elasticsearch
+   c:/>elasticsearch.bat
+and in browser open http://localhost:9200 and check we elastic search is running
+   Now run http://localhost:9200/person, which display index_not_found_exception because still we didnt create person index 
+
+10. Start ur springboot appl which will create the index because @Document annotation has createIndex() which will create index when repository is bootstrapped 
+
+11. Now run http://localhost:9200/person?pretty=true which display the index person with properties id and name 
+
+12. Now we go to postman and run the endpoints
+http://localhost:2000/api/person with POST request and Body - raw - text/json 
+{
+   "id":"1",
+   "name":"Ram"
+}
+
+http://localhost:2000/api/person/1 with GET request  
+
+13. Even we can search the information from index also using
+http://localhost:9200/person/_search?pretty=true
+
+
+Step 2:
+   Now we create another document and index it and fetch it from index.
+   Previously we used @Document annotation with index it belongs and we created mapping directly with annotation and applied the setting using @Setting
+
+1. Create new document called Vehicle with id, number,name and created property
+
+2. Now we want to create mapping to these fields, for this we create a vehicle.json file inside resources-static-mappings folder
+
+{
+  "properties" : {
+    "id": {
+      "type": "keyword"
+    },
+    "number": {
+      "type": "text"
+    },
+    "name": {
+      "type": "text"
+    },
+    "created": {
+      "type": "date"
+    }
+  }
+}
+
+3. Next we create util class on how we can load this vehicle json mappings. So inside helper package we create Util.java program with loadAsString() to which we provide path to a file that we want to load, we use classpathResource to load the file and convert to string and then return it
+
+4. Next we create service that take care of indexes which means previously we create @Document annotation to create index automatically on startup, now we need to do manually as we are not using annotation
+   We create IndexService so whenever our appl is started, it checks if a certain index exists and if not it will create new index.
+   We have @PostConstruct so whenever our appl is starting and once the service has been constructed and execute the method automatically 
+    @PostConstruct
+    public void tryToCreateIndices() {
+        recreateIndices(false);
+    } 
+
+   First we need to check whether the index exist if not we need to create a new index for that 
+
+for (final String indexName : INDICES) {
+            try {
+                final boolean indexExists = client
+                        .indices()
+                        .exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+                if (indexExists) {
+                        continue;
+                    }
+                }
+ catch (final Exception e) {
+                LOG.error(e.getMessage(), e);
+            }
+We are iterating through indices we want and we use RestHighLevelClient object to check if index exists using exists() and using GetIndexRequest we can add array of indexes and check if they exist, and if index exists we are continuing and if not exists we need to create it.
+
+   Next we load the mappings using loadMappings() where mapping name and index name should be same in our case it is vehicle otherwise it throws the log message. Next by using CreateIndexRequest we get settings and mappings, then we create index using RestHighLevelClient object create()
+
+final CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexName);
+                createIndexRequest.settings(settings, XContentType.JSON);
+final String mappings = loadMappings(indexName);
+                if (mappings != null) {
+                    createIndexRequest.mapping(mappings, XContentType.JSON);
+                }
+                client.indices().create(createIndexRequest, RequestOptions.DEFAULT); 
+ 
+
+5. Next we create VehicleService which creates the vehicle and index it, then we can retrieve it from that index 
+   In VehicleService we autowire the RestHighLevelClient, and we create index() method which takes Vehicle object as argument that we want to index. Then we use Jackson objectmapper object to convert this vehicle object to string. Next we use IndexRequest to create the index (ie) in our case vehicle index. And we set Id and source which is string's vehicle object. Finally we use client index() which returns IndexResponse and checking response is ok, which means successfully have indexed the vehicle object 
+
+public Boolean index(final Vehicle vehicle) {
+        try {
+            final String vehicleAsString = MAPPER.writeValueAsString(vehicle);
+
+            final IndexRequest request = new IndexRequest(Indices.VEHICLE_INDEX);
+            request.id(vehicle.getId());
+            request.source(vehicleAsString, XContentType.JSON);
+
+            final IndexResponse response = client.index(request, RequestOptions.DEFAULT);
+
+            return response != null && response.status().equals(RestStatus.OK);
+        } catch (final Exception e) {
+            LOG.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+6. Next we see how to retrieve the vehicle using client object, for that we create getById(), here we create GetIndexRequest with vehicle index and vehicleid. We use client.get() to fetch the response and from response we can get as string using documentFields.getSourceAsString() and using mapper we read and convert to Vehicle class and return it
+
+ public Vehicle getById(final String vehicleId) {
+        try {
+            final GetResponse documentFields = client.get(
+                    new GetRequest(Indices.VEHICLE_INDEX, vehicleId),
+                    RequestOptions.DEFAULT
+            );
+            if (documentFields == null || documentFields.isSourceEmpty()) {
+                return null;
+            }
+
+            return MAPPER.readValue(documentFields.getSourceAsString(), Vehicle.class);
+        } catch (final Exception e) {
+            LOG.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+7. Next we create VehicleController to execute the above index() and getById() method
+
+8. Start the spring boot appl
+
+9. Check whether our index exist in http://localhost:9200/vehicle,
+We can see vehicle index is created with mappings 
+
+10. Go to postman give
+http://localhost:2000/api/vehicle with POST request and Body - raw - JSON
+{
+  "id":"2",
+  "number":"AABB",
+  "name":"Pulzar",
+  "created":"2000-10-05"
+}
+
+http://localhost:2000/api/vehicle/1 with GET request 
+
+11. Check the document using
+http://localhost:9200/vehicle/_search?pretty=true
+
+
+Step 3:
+   We see how to recreate index and then actually build some query 
+   We create recreateIndices() which takes flag called deleteExisting meaning that should the existing index be deleted or not 
+   As u see in @PostConstruct where we actually create our index for the first time when we start our appl. If we find it we do not want to delete it, because if u start ur appl everytime u would lose all the data from elastic search because index would be recreated, which is not good thing
+   We want to have a manual option so we can trigger it whenever we want. So in case if indexExists and deleteExisting flag is true then we only want to delete it, if deleteExisting is false then we continue
+
+1. Create IndexController to call this method 
+
+@PostMapping("/recreate")
+    public void recreateAllIndices() {
+        service.recreateIndices(true);
+    }
+So here we pass true to recreateIndices, so all data we have in an index will be deleted. This is useful when we add some more mappings field to the vehicle.json file then we need to recreate the index 
+ 
+2. Next we are going to create MatchQuery. Matchquery is used when u want to do some search on the test values 
+   Now we need to create somekind of dto, that our frontend or our rest client is going to send and start the search this dto. It will have 2 properties list of fields and search term. 
+   List of field would indicate properties inside ur document that u want to search (ie) in this case is Vehicle which is document with 4 fields, so list which we are sending from the dto. For example if it is number, then search would look at the number field 
+
+Create SearchRequestDTO with list of fields and searchTerm
+
+3. Next create SearchUtil.java 
+        Create getQueryBuilder() where we pass SearchRequestDTO which should contain our fields in our searchterm and checking dto is null and if fields are empty
+     If we have more than one field then we use MultiMatchQueryBuilder which means we are working with multiple fields and not single one 
+
+4. Now we create SearchRequest that should sent to elasticsearch 
+
+public static SearchRequest buildSearchRequest(final String indexName,
+                                                 final SearchRequestDTO dto){
+    try{
+        final SearchSourceBuilder builder=new SearchSourceBuilder().postFilter(getQueryBuilder(dto));
+
+SearchRequest request = new SearchRequest(indexName);
+            request.source(builder);
+
+return request;
+}
+catch (final Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+}
+
+Here we have implemented the method called buildSearchRequest() with indexName and SearchRequestDTO object as argument. We use SearchSourceBuilder and with this builder we need to apply postFilter() which actually get all data from queryBuilder 
+   SearchRequestDTO is used to getQueryBuilder and indexName is used to set it on SearchRequest so that we know which index is searching 
+ 
+
+5. Next we create search() in VehicleService with SearchRequestDTO object 
+   We are creating SearchRequest and checking whether it is null or not 
+   We actually try to perform the search using client, which return as SearchResponse, from SearchResponse we get hits which return Document as json and convert to Vehicle class using ObjectMapper 
+
+6. Now create endpoint in VehicleController to search for the request 
+
+@PostMapping("/search")
+    public List<Vehicle> search(@RequestBody final SearchRequestDTO dto) {
+        return service.search(dto);
+    }
+
+7. Start the appl and in Postman we give
+
+http://localhost:2000/api/vehicle/search with POST request
+
+{
+  "fields":["number"],
+  "searchTerm":"CCDD"
+}
+
+or
+
+{
+  "fields":["id"],
+  "searchTerm":"2"
+}
+
+
+Step 4:
+   Now we will see how to do sorting based on created field in Vehicle document 
+
+1. In SearchRequestDTO, we have to provide a new property which define the fields on which we want to sort and also add the order that we are sorting ascending or descending 
+      private String sortBy;
+      private SortOrder order;
+
+2. In SearchUtil.java, we want to extend buildSearchRequest() for sorting purpose.
+   First we check if SearchRequestDTO contains sortBy feild then we apply the condition, now with builder object we call sort() with the field we are going to sort and also checking dto.getOrder() is not null then we are using whatever we are sending or by default it uses SortOrder.ASC
+    if (dto.getSortBy() != null) {
+                builder = builder.sort(
+                        dto.getSortBy(),
+                        dto.getOrder() != null ? dto.getOrder() : SortOrder.ASC
+                );
+            }
+
+3. Start the appl
+
+4. In postman, run http://localhost:2000/api/vehicle with POST request, add some vehicles 
+
+{
+  "id":"2",
+  "number":"AABB",
+  "name":"Pulzar",
+  "created":"2000-10-05"
+}
+
+
+5. Now we give http://localhost:2000/api/vehicle/search with POST request
+{
+   "fields":["name"],
+   "searchTerm":"Pulzar",
+   "sortBy":"created",
+   "order":"DESC"
+}
+Now we can see it will display all vehicles with name "Pulzar" and in descending order based on created date. If we not provide the order then by default it will be in ascending order 
+
+
+Step 5: 
+   We see how to implement range query, so in Vehicle document we have date field called created where we can implement range query, for example we can get all vehicles in range from 2016 to 2000 or get all vehicles created before or after 2000
+
+1. In SearchUtil.java, we create getQueryBuilder() which takes String and Date as arguments. Next we use QueryBuilder rangeQuery() with gte() (ie) greater than equal to date.
+   Now it will return all vehicles that are created after the date. We have different methods from RangeQueryBuilder like gte,gt,lt,lte,to,includeLower 
+etc 
+
+private static QueryBuilder getQueryBuilder(final String field, final Date date) {
+        return QueryBuilders.rangeQuery(field).gte(date);
+    }
+
+2. Now we want integrate this method in buildSearchRequest() to perform range query. So we create new  buildSearchRequest() which takes indexName, field and date 
+
+3. Next in VehicleService.java create getAllVehiclesCreatedSince() to get all vehicles that have been created since the given date
+
+public List<Vehicle> getAllVehiclesCreatedSince(final Date date) {
+        final SearchRequest request = SearchUtil.buildSearchRequest(
+                Indices.VEHICLE_INDEX,
+                "created",
+                date
+        );
+
+        return searchInternal(request);
+    }
+
+4. Next we create an endpoint in VehicleController to access the date
+
+@GetMapping("/search/{date}")
+    public List<Vehicle> getAllVehiclesCreatedSince(
+            @PathVariable
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            final Date date) {
+        return service.getAllVehiclesCreatedSince(date);
+    }
+
+5. Start the appl
+
+6. In Postman, give http://localhost:2000/api/vehicle/search/2010-02-21 with Get request
+  Now it will display all vehicle that are created after 2010-02-21
+
+
+Step 6:
+    
+1. Create VehicleDummyDataService.java which is used to insert some data without doing manually 
+    Here we use vehicleService.index() to index some vehicles and vehicles are build in buildVehicles() which takes the parameters which we need and finally return the vehicle and index it 
+
+2. Create new endpoint in VehicleController to insert the dummy vehicle data 
+
+@PostMapping("/insertdummydata")
+    public void insertDummyData() {
+        dummyDataService.insertDummyData();
+    }
+
+3. Next we want to create query that will find all vehicles created after some date with some name. So we are creating a query which is kind of a combination of date and name, for that we use bool query
+   Bool query is a combination of one or more following boolean clauses like must, must not, should and filter.
+  must - the clause must appear in matching document and will contribute to the score 
+  must not - opposite to must (ie) it must not appear in the matching documents
+  should - its optionally appear in the matching document 
+  filter - the query must appear in a matching document but it will have no effect in score 
+
+
+4. For example if we google some keyword, consider we are searching for car called audi and on first page of google result we will have audi web page and later some news articles
+   Scoring is used to sort the search hits to tell which are better ones and which are worst ones, so score is just representation of how relevant the document in regards to that specific query that u r using
+  There are 3 main factors that affecting the document score, one is term frequency which means more the term appears in field, more important it is. second is inverse document frequency which means more document contains the term, less important the term is.  Third is field length so the shorter fields are more likely to relevant than longer fields 
+
+5. In VehicleController, we create new endpoint which takes SearchRequestDTO and date 
+@PostMapping("/searchcreatedsince/{date}")
+    public List<Vehicle> searchCreatedSince(
+            @RequestBody final SearchRequestDTO dto,
+            @PathVariable
+            @DateTimeFormat(pattern = "yyyy-MM-dd")
+            final Date date) {
+        return service.searchCreatedSince(dto, date);
+    }
+
+6. Next we create searchCreatedSince() in VehicleService
+public List<Vehicle> searchCreatedSince(final SearchRequestDTO dto, final Date date) {
+        final SearchRequest request = SearchUtil.buildSearchRequest(
+                Indices.VEHICLE_INDEX,
+                dto,
+                date
+        );
+
+        return searchInternal(request);
+    }
+Here we build  SearchRequest by providing index, dto and date field
+
+7. Next create buildSearchRequest() in SearchUtil.java with indexName, dto and date object
+  First we create searchQuery from getQueryBuilder(dto) and then we create dateQuery from getQueryBuilder("created",date).
+   final QueryBuilder searchQuery = getQueryBuilder(dto);
+            final QueryBuilder dateQuery = getQueryBuilder("created", date);
+
+Next we need to combine both searchQuery and dateQuery by using BoolQuery from QueryBuilders and we use must for searchQuery and dateQuery.
+            final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery()
+                    .must(searchQuery)
+                    .must(dateQuery); 
+
+Finally pass boolQuery object to SearchSourceBuilder's postfilter()
+ SearchSourceBuilder builder = new SearchSourceBuilder()
+                    .postFilter(boolQuery);
+
+8. Start the appl
+
+9. In Postman, give http://localhost:2000/api/vehicle/insertdummydata with post request 
+   So vehicle data will be inserted 
+
+10. In Postman give http://localhost:2000/api/vehicle/searchcreatedsince/2010-01-01 with POST request
+{
+   "fields":["name"],
+   "searchTerm":"Audi",
+   "order":"ASC"
+}
+   It will display Audi vehicles in ascending order which is created after 2010-01-01
+
+11. Now we give mustNot(searchQuery) and must(dateQuery) which  means dateQuery must match but whatever we put in searchQuery need not match 
+
+In Postman give http://localhost:2000/api/vehicle/searchcreatedsince/2010-01-01 with POST request
+{
+   "fields":["name"],
+   "searchTerm":"Audi",
+   "order":"ASC"
+}
+   It will display any vehicles in ascending order which is created after 2010-01-01 but not match searchTerm Audi
+
+Step 7: Pagination
+     Now we want to limit our results, for example a huge data set and we dont want to send all data to enduser, basically we want to create pages and show few documents per pages, for that we use pagination 
+
+1. First we create new PagedRequestDTO class which has 2 property called page and size, and DEFAULT_SIZE=100 so 
+
+2. Next SearchRequestDTO class should extends PagedRequestDTO 
+
+3. Now we take SearchUtil class buildSearchRequest(indexName,dto) and inside this method we will implement the pagination
+   Now we take page,size property from SearchRequestDTO and provide to builder to limit the data. In elastic search we have 2 property called from() represent from which document we want to seacrh and size() represent the total documents we want to return 
+  For example if we have page is 1 and size is 10 which means from is at 10 and we are searching on the second page (ie) from 10 to size 10 so 10+10=20
+
+           final int page = dto.getPage();
+            final int size = dto.getSize();
+            final int from = page <= 0 ? 0 : page * size;
+
+            SearchSourceBuilder builder = new SearchSourceBuilder()
+                    .from(from)
+                    .size(size)
+                    .postFilter(getQueryBuilder(dto));
+
+4. Start the appl
+
+5. In Postman, we give http://localhost:2000/api/vehicle/search with POST request
+{
+  "fields":["name"},
+  "searchTerm":"Audi",
+  "order":"ASC"
+}
+It will display 3 vehicles because we have only 3 Audi vehicle
+
+6. Now we want to limit this so we give first page and size=2, so we can see 2 vehicle in first page, but we wont get 3rd vehicle because it will be in second page 
+
+In Postman, we give http://localhost:2000/api/vehicle/search with POST request
+{
+  "fields":["name"],
+  "searchTerm":"Audi",
+  "order":"ASC",
+  "page":0,
+  "size":2
+}
+
+7. If we give page=1 then we will get only 3rd vehicle
+In Postman, we give http://localhost:2000/api/vehicle/search with POST request
+{
+  "fields":["name"],
+  "searchTerm":"Audi",
+  "order":"ASC",
+  "page":1,
+  "size":2
+}
+
+8. If we give page=0,size=1 then we will get only 1st vehicle
+In Postman, we give http://localhost:2000/api/vehicle/search with POST request
+{
+  "fields":["name"],
+  "searchTerm":"Audi",
+  "order":"ASC",
+  "page":0,
+  "size":1
+}
+
+9. If we give page=0,size=0 then we will get all vehicle
+In Postman, we give http://localhost:2000/api/vehicle/search with POST request
+{
+  "fields":["name"],
+  "searchTerm":"Audi",
+  "order":"ASC",
+  "page":0,
+  "size":0
+}
+
+
+Spring Boot + ELK 
+
+1. Create SpringBoot project with web dependency
+
+2. Create PaymentController
+
+@RestController
+@RequestMapping("/payment")
+public class PaymentController {
+   private static final Logger LOG=LoggerFactory.getLogger(PaymentController.class);
+
+   @GetMapping("/doPay")
+   public String doPayment() {
+       LOG.info("Entered into Payment Process");
+       try {
+           LOG.info("Payment about to start");
+           throw new RuntimeException("No balance Exception");
+       }
+       catch(Exception e){
+           LOG.error("Unable to process payment"+e.getMessage());
+          e.printStackTrace();
+          LOG.error("Exception - "+AppUtil.getLogSupport(e));
+       }
+       return "SUCCESS";
+    }
+}
+
+3. Now we want to take stacktrace in string representation format, so we create interface AppUtil 
+
+public interface AppUtil {
+   public static String getLogSupport(Exception e) {
+      StringWriter sw=new StringWriter();
+      PrintWriter pw=new PrintWriter(sw);
+      e.printStackTrace(pw);
+      return sw.toString();
+  }
+}
+
+4. In application.properties,configure the log file path
+logging.file.name=C:/mylog/elktest.log
+server.port=8000
+
+5. Start elasticsearch.bat and run http://localhost:9200
+
+6. start kibana.bat and run http://localhost:5601
+
+7. In Logstash bin folder, create logstash.conf
+
+input {
+  file {
+      type => "java"
+      path => "C:/mylog/elktest.log"
+      codec => multiline {
+          pattern => "^%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{TIME}.*"
+          negate => "true"
+          what => "previous"
+   }
+  }
+}
+
+Type of appl is Java appl and read from path "C:/mylog/elktest.log". codec represent how to encoding and decoding done internally, we are taking multiline input and we provide log pattern 
+
+filter {
+   if [message] =~ "\tat" {
+       grok {
+         match => ["message", "^(\tat)"]
+         add_tag => ["stacktrace"]
+       }
+   }
+}
+We mention tab space with at(\tat), read those message and add message keyword and represent a tag "stacktrace"
+
+output {
+   stdout {
+      codec => rubydebug
+   }
+   elasticsearch {
+      hosts => ["localhost:9200"]
+   }
+}
+Now we want to print the content in elasticsearch, iit means we are read from log and filter it and give to elastic search 
+
+8. Run bin> logstash -f logstash.conf
+
+9. Start the spring boot appl and give http://localhost:8000/payment/doPay and it will give SUCCESS 
+
+10. Now we check elktest.log file will be created with stacktrace in console starting with "Exception -" and start with at 
+
+11. Goto Kibana - http://localhost:5601
+    Goto Dashboard - Create new daskboard - Create new index pattern
+    Index name: logstash-*
+    Click Next step
+    Time field: @Timestamp
+    CLick Create Index Pattern
+
+12. Goto Discover option for searching, now we can see all details 
+
+13. Click show dates option or calendar and give different options to search log in different time 
+
+
+Spring Data ElasticSearch using QueryDSL
+      QueryDSL will internally helps us to convert our complex query to JSON format 
+
+https://github.com/Java-Techie-jt/spring-boot-elasticsearch-queryDSL 

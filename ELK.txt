@@ -1353,7 +1353,272 @@ Now we want to print the content in elasticsearch, iit means we are read from lo
 13. Click show dates option or calendar and give different options to search log in different time 
 
 
-Spring Data ElasticSearch using QueryDSL
+Example 2: Spring Data ElasticSearch using QueryDSL
       QueryDSL will internally helps us to convert our complex query to JSON format 
 
 https://github.com/Java-Techie-jt/spring-boot-elasticsearch-queryDSL 
+
+-------------------------------------------------------
+
+
+
+Explore Elastic Search Directory
+
+1. bin directory will contain all batch files
+
+2. config directory has important file called elasticsearch.yml file
+    We have information about cluster, node, path of logs so in future if we go with prod env if we want to change the prod path then we can change over here 
+
+What is node?
+   Node is an instance of elasticsearch, suppose we have one cluster and that cluster is bunch of nodes. We can also say node is database where a data is stored 
+
+What is index? - Collection of document
+   Suppose we have books in that first page is index which says in which index number which topic is there
+   Like that we have index where documents are linked to the index (ie) we can search the document as per the index 
+
+What is document?
+   We know elasticsearch is analytic search engine and nosql database. So in SQL database we have table but in elasticsearch there is no concept of tables instead we have documents
+
+What is Cluster?
+   Cluster is bunch of nodes 
+
+What is fields?
+   In SQL we have column names but in elastic search instead of columns we have fields. So table is called document and column is called fields
+
+Metadata
+   {
+     "name":"Ram",
+     "country":"India"
+   }
+         is stored as
+   {
+      "_index":"people",
+      "_type":"_doc",
+      "_id":"123",
+      "_version":1,
+      "_seq_no":0,
+      "_primary_term":1,
+      "_source": {
+           "name":"Ram",
+           "country":"India"
+       }
+     }
+
+Suppose we want to store user object which contains name and country, so how it will store in terms of elasticsearch
+   So inside _source, our user object will be stored and others are elasticsearch attributes which will search anything so quickly 
+
+To access Cluster, Nodes and Indices in Kibana
+
+1. Run Kibana.bat
+2. Open http://localhost:5601
+3. Click 3lines - Dev tools - Console
+we can write the query and get output
+
+GET /_cluster/health
+
+GET /_cat/nodes?v
+
+GET /_cat/indices?v
+
+
+What is Sharding?
+    Shard is subset of index data or it is way to split document into different pieces
+    Index is collection of document and sharding is subset of index data so sharding works on document so sharding split document into different pieces
+    Consider we have nodeA of 100GB and nodeB of 100GB space. Now we have large no of documents of size 200GB and it will store in index, so size of index is also 200GB, normally index will be stored in either nodeA or nodeB. But index size is 200GB and both nodes have 100GB size, we cant store index in either of node because index size is more than node, so we can overcome this problem using sharding which splits the document into different pieces
+   We have 200GB document so we have 2 shards (ie) shardA with 100GB and shardB with 100GB 
+
+nodeA: 100GB
+shardsA: 100GB
+
+nodeB: 100GB
+shardsB: 100GB
+
+index: 200GB
+200GB Documents
+   In order to see the shards, go to Kibana console and provide
+
+GET /_cat/shards?v
+
+We can see shards=0 and primerep=p which is primary shards and "r" represents replica
+
+What is indicies?
+    Indicies is document id 
+
+What is Replication?
+    It means copy data to another node. Replication will work only if we more than 1 node.
+    Consider we have 2 nodes (ie) nodeA and nodeB and in production due to some cause nodeA is damaged then we lost that data, for that elasticsearch provide replication mechanism so that if nodeA is damaged then we have replication of nodeA inside nodeB and if nodeB is down then we have replica of nodeB inside nodeA 
+
+nodeA: 100GB
+shardsA: 100GB
+replica B
+
+nodeB: 100GB
+shardsB: 100GB
+replica A
+
+index: 200GB
+200GB Documents
+
+How to create multiple node?
+   1. Create new folder and copy elasticsearch software inside that folder
+   2. Goto config folder and open elasticsearch.yml
+   3. uncomment and change node name
+        node.name=node-2
+   4. Now if u run elasticsearch.bat of this folder
+   5. Go to kibana console and check
+GET /_cat/nodes?v
+
+How to create multiple indexes?
+   1. Now we create index called "pages", we give in Kibana console
+          PUT /pages
+   2. First we check health using "GET /_cluster/health". It will display status:yellow 
+   3. Now give "GET /_cat/shards?v"
+It will display index pages, with p and r (ie) primary and replica. Once this replica is assigned to another node then status will change to green 
+   4. Now we create another index called "price", we give in Kibana console
+          PUT /price
+   5.  Now give "GET /_cat/shards?v"
+   6. To checj status of index we give
+       GET /pages
+
+How to create document?
+   1. In Kibana console we provide,indexname with _doc and some id
+  POST /airinfo/_doc/123
+  {
+      "name":"jet-airways",
+      "source":"Chennai",
+      "destination":"Pune"
+  }
+Now it will create index airinfo of type _doc with id 123
+  
+   2. In case if we didnt give id while creating document, then it will create id by default 
+POST /airinfo/_doc
+{
+  "name":"airasia",
+  "source":"Mumbai",
+  "destination":"Delhi"
+}
+
+   3. To retrieve document "GET /airinfo/_doc/123"
+   4. Now we want to update the document 123 source from chennai to Cochin 
+POST /airinfo/_update/123 
+{
+    "doc": {
+       "source":"Cochin"
+     }
+}
+   5. To add fields in existing document 
+POST /airinfo/_update/123 
+{
+    "doc":{
+       "cost":"5000"
+     }
+}
+   6. To see all document of an index
+GET /airinfo/_search
+   7. If we want to search particular document based on query
+GET /airinfo/_search
+{
+   "query": {
+       "match_all" : {}
+    }
+}
+
+GET /airinfo/_search
+{
+   "query": {
+       "match": {
+         "source": "Cochin"
+       }
+    }
+}
+
+   
+Example 3: Spring Boot + ElasticSearch 
+
+https://github.com/dheeraj-code-creator/elasticsearch-demo
+
+   1. First we will store documents to elasticsearch 
+   2. On Kibana we see whether the document is created or not
+   3. Connect between Spring boot to elasticsearch
+   4. Fetch data from elasticsearch index based on
+         - Get all user data
+         - Get user by name
+         - Get user by name and address
+
+How elasticsearch will search data?
+    Before elasticsearch we have RDBMS where database search data based on page search whereas elasticsearch will search based on keyword search 
+
+Page search in RDBMS:
+search = hello
+
+page search:
+
+page 1
+page 2
+page 3
+page 4
+page 5
+page 6 is having word "hello"
+page 7
+    
+   For example, we want to search word "hello" in page 1 to page 7, and "hello" word is present in page 6. So in RDBMS first it will search in page 1 then page 2 etc till page 6 and finally give response. So it is time consuming since it goes from page 1 to page 6, so elasticsearch comes into picture
+
+keyword search in elasticsearch:
+
+        Doc1	Doc2	Doc3	Doc4	Doc5	Doc6
+hello	  X	 X	 -	  -	  - 	  - 
+world	  -	 -	 X	  -	  X 	  -
+
+    Here we have Document1 to Document6 and word "hello" is present in Document1 and Document2 alone, so when we write query for "hello" it will return in very less time, because it search only the document where keyword "hello" is present. Consider now we want to search "world", so in single iteration it return the result from doc3 and doc5 
+   So in RDBMS data stored in row and column but in elasticsearch data is stored inside document as inverted index 
+
+What is inverted index?
+   Whatever the data stored inside documents, all data are converted to tokens (ie) everything is not stored as line it will be stored as token 
+
+
+1. Create usermanage index with document and 3 fields
+POST /usermanage/_doc/01
+{
+   "userId":"111",
+   "userName":"Ram",
+   "address":"Delhi"
+}
+
+POST /usermanage/_doc/02
+{
+   "userId":"222",
+   "userName":"Sam",
+   "address":"Pune"
+}
+
+POST /usermanage/_doc/03
+{
+   "userId":"333",
+   "userName":"Raj",
+   "address":"Chennai"
+}
+
+POST /usermanage/_doc/04
+{
+   "userId":"444",
+   "userName":"Taj",
+   "address":"Cochin"
+}
+
+2. To display all document of index
+GET /usermanage/_search
+
+3. Create spring boot project with web, elastic search dependency. Here we use elasticsearch RestHighLevelClient to call index and fetch the data 
+
+4. Create entity class called User with userId, userName and address
+
+5. Create controller, Service and Repository classes
+
+6. In UserRepositoryImpl.java, first we need RestHighLevelClient.
+   - To search all data we use matchAllQuery()
+   - To search particular data we use boolQuery() with must(), here we use termQuery() which is case sensitive and exact search. Suppose we search "Chennai" and in elasticsearch we store in lowercase and we want to search in uppercase where it does not work, so we use termQuery(). 
+    As we studied in elasticsearch the data is converted into tokens, so in order to search based on token then we use "userName.keyword"
+   - Consider userName is "elastic-user-1,elastic-user-2,elastic-user-3" in that case first 2 tokens of userName is same so we use termQuery() which means exact match. But in case of address already all values are different so we use matchQuery()
+
+7. Finally run the appl in postman to view all data with related endpoints
+
